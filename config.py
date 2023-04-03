@@ -1,0 +1,10 @@
+last_model_save = ''
+model=None
+model_last_accuracy = None
+use_traditional =True
+hash_dict = {}
+data_set = []
+d = 10
+function = "RosenBrock"
+generation = 29
+path = f"{function}/d{d}"
