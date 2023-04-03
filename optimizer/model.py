@@ -11,8 +11,9 @@ from optimizer import Optimizer
 from utils import MyRounder
 
 generation = 1
-
-
+benchmark ='RosenBrock'
+dimension = 10
+pop_size = 100
 def binary_tournament(pop, P=(100*100,2), **kwargs):
     global generation
     # The P input defines the tournaments and competitors
@@ -40,19 +41,19 @@ def binary_tournament(pop, P=(100*100,2), **kwargs):
             label.append(0)
             S[i] = b
     df=pd.DataFrame.from_dict({"source":source,"target":target,"label":label})
-    df.to_csv(f"generations/{generation}.csv")
+    df.to_csv(f"{benchmark}/d{dimension}/{generation}.csv")
     generation+=1
     return S
 class MySelection(TournamentSelection):
 
     def _do(self, _, pop, n_select, n_parents=1, **kwargs):
-        return super()._do(_, pop, 2000, n_parents, **kwargs)
+        return super()._do(_, pop,int((pop_size * (pop_size - 1)) / (n_parents * 2)), n_parents, **kwargs)
 
 
 def main():
-    problem = Optimizer()
+    problem = Optimizer(function_name=benchmark)
     algorithm = GA(
-        pop_size=100,
+        pop_size=pop_size,
         sampling=FloatRandomSampling(),
         crossover=SBX(prob=1.0, eta=3.0, vtype=float,repair=MyRounder()),
         mutation=PM(prob=1.0, eta=3.0, vtype=float,repair=MyRounder()),

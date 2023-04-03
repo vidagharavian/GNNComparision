@@ -145,7 +145,7 @@ def run_for_all():
     print(f"Test: {test_auc:.3f}")
 
 def run_for_generation(model,optimizer,criterion,i):
-        archive = create_archive(i,archive_size=10000)
+        archive = create_archive(i,archive_size=100000)
         print(f"{i} generation")
         graph, posetive, negetive_m = read_data(f"generations/{i}.csv",edge_vector=archive)
         train_data, val_data, test_data = split(graph)
@@ -172,6 +172,7 @@ def run_for_generation(model,optimizer,criterion,i):
 # criterion = torch.nn.BCEWithLogitsLoss()
 measure =[]
 objective = 10
+population = 100
 for i in range(1,200):
     model = Net(objective, 128, 64)
     optimizer = torch.optim.Adam(params=model.parameters(), lr=0.001)

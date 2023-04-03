@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 
 hash_dict={}
+
+
 def create_feature_vector(input_dir="generations",gen_num=200):
     global hash_dict
     data_set =[]
@@ -53,8 +55,6 @@ def change_to_array(i:str):
     return i
 
 def create_edge_vector_generation(generation_path):
-
-
     for i in range(1, 200):
         df = pd.read_csv(f"../optimizer/{generation_path}/{i}.csv")
         source, label, target = df['source'], df['label'], df['target']
@@ -68,6 +68,8 @@ def create_edge_vector_generation(generation_path):
         data = pd.DataFrame.from_records(data_set)
         data.to_csv(f"generations/{i}.csv")
 
-
-create_feature_vector("generations")
-create_edge_vector_generation("generations")
+function_name ='RosenBrock'
+dimension = 10
+path = f"{function_name}/d{dimension}"
+create_feature_vector(path)
+create_edge_vector_generation(path)
