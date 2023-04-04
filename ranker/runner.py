@@ -24,7 +24,7 @@ def main():
     benchmark = 'RosenBrock'
     dimension = 10
     generations =200
-    graph_sage = GraphSage(20, 20, [20, 10], [20, 20])
+    graph_sage = GraphSage(100, 20, [20, 10,5], [32, 64,128])
     for i in range(1,generations):
         if i<3:
             data_set =create_archive("generations",i)
