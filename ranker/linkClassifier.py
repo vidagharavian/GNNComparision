@@ -20,8 +20,9 @@ def positive_and_negative_links(pos_edges,neg_edges):
     neg = random.choices(neg_tuple,k=len(pos))
     return pos, neg
 
-def build_graph(generation):
-    square_edges =pd.read_csv(f"generations/{generation}.csv")
+def build_graph(generation,square_edges=None):
+    if square_edges is None:
+        square_edges =pd.read_csv(f"generations/{generation}.csv")
 
     negetive_edges = square_edges[square_edges['Weight'] == 0]
     positive_edges = square_edges[square_edges['Weight'] == 1]
@@ -51,7 +52,7 @@ def build_graph(generation):
 def get_labels(pos_test,neg_test,node_features):
     edge_ids_test =np.array(pos_test+neg_test)
     edge_labels_test = np.repeat([1, 0], [len(pos_test), len(neg_test)])
-    G_test = StellarGraph(node_features, pd.DataFrame(list(pos_test),columns=["source","target"]), source_column="source", target_column="target", node_type_default="superior", edge_type_default="dominant")
+    G_test = StellarGraph(node_features, pd.DataFrame(list(neg_test),columns=["source","target"]), source_column="source", target_column="target", node_type_default="superior", edge_type_default="dominant")
     return G_test, edge_ids_test, edge_labels_test
 
 
@@ -90,32 +91,3 @@ def build_model(epochs,G_train,edge_ids_train,edge_labels_train,G_test,edge_ids_
     history = model.fit(
         train_flow, epochs=epochs, validation_data=test_flow, verbose=2, shuffle=False
     )
-
-G_train, edge_ids_train, edge_labels_train,G_test, edge_ids_test, edge_labels_test=build_graph(1)
-build_model(50,G_train,edge_ids_train,edge_labels_train,G_test,edge_ids_test,edge_labels_test)
-
-# def random_walk_temperal(graph):
-#     num_walks_per_node = 10
-#     walk_length = 80
-#     context_window_size = 10
-#     num_cw = len(graph.nodes()) * num_walks_per_node * (walk_length - context_window_size + 1)
-#     temporal_rw = TemporalRandomWalk(graph)
-#     temporal_walks = temporal_rw.run(
-#         num_cw=num_cw,
-#         cw_size=context_window_size,
-#         max_walk_length=walk_length,
-#         walk_bias="exponential",
-#     )
-#
-# def random_walk_static(graph):
-#     num_walks_per_node = 10
-#     walk_length = 80
-#     context_window_size = 10
-#     num_cw = len(graph.nodes()) * num_walks_per_node * (walk_length - context_window_size + 1)
-#     static_rw = BiasedRandomWalk(graph)
-#     static_walks = static_rw.run(
-#         nodes=graph.nodes(), n=num_walks_per_node, length=walk_length
-#     )
-#
-# def operator_l2(u, v):
-#     return (u - v) ** 2
