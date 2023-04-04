@@ -26,34 +26,29 @@ def build_graph(generation,square_edges=None):
 
     negetive_edges = square_edges[square_edges['Weight'] == 0]
     positive_edges = square_edges[square_edges['Weight'] == 1]
-
+    all_positive = positive_edges[["Src", "Dst"]].values.tolist()
     # keep older edges in graph, and predict more recent edges
     edges_train, edges_test = train_test_split(positive_edges, test_size=0.25)
 
     features = pd.read_csv(f"features.csv")
-    # square = StellarGraph(edges=square_edges)
-    # square_named = StellarGraph(node_features=features,
-    #     edges=pd.DataFrame(
-    # {"source": src, "target":dst}), node_type_default="superior", edge_type_default="dominant"
-    # )
     pos, neg = positive_and_negative_links(edges_train,negetive_edges)
     negetive_edges=negetive_edges[["Src", "Dst"]].values.tolist()
     negetive_edges = [i for i in negetive_edges if i not in neg]
     pos_test, neg_test = positive_and_negative_links(edges_test,negetive_edges)
-    # edge_splitter_test = EdgeSplitter(square_first_second)
-    G_test, edge_ids_test, edge_labels_test = get_labels(pos_test,neg_test,features)
+    G_test, edge_ids_test, edge_labels_test,all_positive = get_labels(pos_test,neg_test,features,all_positive)
 
     print(G_test.info())
     # edge_splitter_train = EdgeSplitter(G_test)
-    G_train, edge_ids_train, edge_labels_train = get_labels(pos,neg,features)
+    G_train, edge_ids_train, edge_labels_train ,all_positive= get_labels(pos,neg,features,all_positive)
     print(G_train.info())
     return G_train, edge_ids_train, edge_labels_train,G_test, edge_ids_test, edge_labels_test
 
-def get_labels(pos_test,neg_test,node_features):
+def get_labels(pos_test,neg_test,node_features,all_positive):
     edge_ids_test =np.array(pos_test+neg_test)
+    remain_list = [i for i in all_positive if i not in pos_test]
     edge_labels_test = np.repeat([1, 0], [len(pos_test), len(neg_test)])
-    G_test = StellarGraph(node_features, pd.DataFrame(list(neg_test),columns=["source","target"]), source_column="source", target_column="target", node_type_default="superior", edge_type_default="dominant")
-    return G_test, edge_ids_test, edge_labels_test
+    G_test = StellarGraph(node_features, pd.DataFrame(list(remain_list),columns=["source","target"]), source_column="source", target_column="target", node_type_default="superior", edge_type_default="dominant")
+    return G_test, edge_ids_test, edge_labels_test,remain_list
 
 
 
