@@ -24,7 +24,7 @@ def main():
     benchmark = 'RosenBrock'
     dimension = 10
     generations =200
-    graph_sage = GraphSage(100, 20, [20, 10,5], [32, 64,128])
+    graph_sage = GraphSage(40, 20, [5,5], [10, 10])
     for i in range(1,generations):
         if i<3:
             data_set =create_archive("generations",i)
@@ -32,12 +32,17 @@ def main():
             graph_sage.prepare_data(G_train, edge_ids_train, edge_labels_train, G_test, edge_ids_test, edge_labels_test)
             model=graph_sage.build_model()
             graph_sage.model_fit(model,graph_sage.train_flow,test_flow=graph_sage.test_flow)
+            print("after")
+            graph_sage.evaluate(model, graph_sage.test_flow)
+
         else:
             G_train, edge_ids_train, edge_labels_train, G_test, edge_ids_test, edge_labels_test = build_graph(i)
             graph_sage.prepare_data(G_train, edge_ids_train, edge_labels_train, G_test, edge_ids_test, edge_labels_test)
             graph_sage.evaluate(model,graph_sage.test_flow)
             model = graph_sage.build_model()
             graph_sage.model_fit(model, graph_sage.train_flow, test_flow=graph_sage.test_flow)
+            print("after")
+            graph_sage.evaluate(model, graph_sage.test_flow)
 main()
 
 

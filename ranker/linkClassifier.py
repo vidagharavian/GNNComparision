@@ -23,12 +23,11 @@ def positive_and_negative_links(pos_edges,neg_edges):
 def build_graph(generation,square_edges=None):
     if square_edges is None:
         square_edges =pd.read_csv(f"generations/{generation}.csv")
-
     negetive_edges = square_edges[square_edges['Weight'] == 0]
     positive_edges = square_edges[square_edges['Weight'] == 1]
     all_positive = positive_edges[["Src", "Dst"]].values.tolist()
     # keep older edges in graph, and predict more recent edges
-    edges_train, edges_test = train_test_split(positive_edges, test_size=0.25)
+    edges_train, edges_test = train_test_split(positive_edges, test_size=0.25,train_size=0.5)
 
     features = pd.read_csv(f"features.csv")
     pos, neg = positive_and_negative_links(edges_train,negetive_edges)
@@ -49,8 +48,6 @@ def get_labels(pos_test,neg_test,node_features,all_positive):
     edge_labels_test = np.repeat([1, 0], [len(pos_test), len(neg_test)])
     G_test = StellarGraph(node_features, pd.DataFrame(list(remain_list),columns=["source","target"]), source_column="source", target_column="target", node_type_default="superior", edge_type_default="dominant")
     return G_test, edge_ids_test, edge_labels_test,remain_list
-
-
 
 
 
