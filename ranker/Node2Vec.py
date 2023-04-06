@@ -99,7 +99,10 @@ def load_edges_test(generation):
     u, v = g.edges()
     test_pos_u, test_pos_v = u, v
     adj = sp.coo_matrix((np.ones(len(u)), (u.numpy(), v.numpy())))
-    adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
+    try:
+        adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
+    except:
+        pass
     neg_u, neg_v = np.where(adj_neg != 0)
     test_neg_u, test_neg_v = neg_u, neg_v
     return test_neg_u, test_neg_v, test_pos_u, test_pos_v,g
