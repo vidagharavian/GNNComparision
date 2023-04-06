@@ -11,8 +11,8 @@ from optimizer import Optimizer
 from utils import MyRounder
 
 generation = 1
-benchmark ='RosenBrock'
-dimension = 50
+benchmark ='Ackley'
+dimension = 10
 pop_size = 100
 def binary_tournament(pop, P=(100*100,2), **kwargs):
     global generation
@@ -73,4 +73,6 @@ main()
 """
 rosenbrock last objective 10 : [6.60381283]
 rosenbrock last objective 20 :[18.16060861]
+ackley last objective 10 : 0.02869612
+
 """

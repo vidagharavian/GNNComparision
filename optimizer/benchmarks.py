@@ -1,3 +1,6 @@
+from deap import benchmarks
+
+
 class RosenBrock():
 
   def __init__(self,dim) -> None:
@@ -12,3 +15,7 @@ class RosenBrock():
       b = (1 - x[i])**2
       sum += a + b
     return sum
+
+class Ackley:
+  def evaluate(self,x):
+    return benchmarks.ackley(x)[0]

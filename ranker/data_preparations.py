@@ -68,8 +68,8 @@ def create_edge_vector_generation(generation_path):
         data = pd.DataFrame.from_records(data_set)
         data.to_csv(f"generations/{i}.csv")
 
-function_name ='RosenBrock'
-dimension = 20
+function_name ='Ackley'
+dimension = 10
 path = f"{function_name}/d{dimension}"
 create_feature_vector(path)
 create_edge_vector_generation(path)

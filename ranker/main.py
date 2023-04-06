@@ -10,8 +10,8 @@ from ranker.Node2Vec import load_edges, apply_edges, train_model, load_edges_tes
 import warnings
 warnings.filterwarnings("ignore")
 
-dimension = 20
-benchmark ='RosenBrock'
+dimension = 10
+benchmark ='Ackley'
 pop_size = 100
 
 model = GraphSAGE(dimension, 64,32,0.2)
@@ -22,9 +22,8 @@ pred = MLPPredictor(32)
 optimizer = torch.optim.Adam(itertools.chain(model.parameters(), pred.parameters()), lr=0.01)
 
 def train_in_generation(generation,model):
-    archive = create_archive(generation, 15000)
     val_neg_u, val_neg_v, train_neg_u, train_neg_v, val_pos_u, val_pos_v, train_pos_u, train_pos_v, g, train_g = load_edges(
-        generation, archive)
+        generation, create_archive(generation, 15000))
     train_neg_g, train_pos_g = apply_edges(train_pos_u, train_pos_v, train_neg_u, train_neg_v, g)
     val_neg_g, val_pos_g = apply_edges(val_pos_u, val_pos_v, val_neg_u, val_neg_v, g)
     model = train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g)
