@@ -19,3 +19,8 @@ class RosenBrock():
 class Ackley:
   def evaluate(self,x):
     return benchmarks.ackley(x)[0]
+
+
+class Griewank:
+  def evaluate(self,x):
+    return benchmarks.griewank(x)[0]

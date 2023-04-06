@@ -1,7 +1,7 @@
 
 from pymoo.core.problem import Problem, ElementwiseProblem
 
-from benchmarks import RosenBrock, Ackley
+from benchmarks import RosenBrock, Ackley, Griewank
 
 
 class Optimizer(ElementwiseProblem):
@@ -18,6 +18,10 @@ class Optimizer(ElementwiseProblem):
             xl = -32.768
             xu = 32.768
             self.func = Ackley()
+        if function_name == 'Griewank':
+            xl = -600
+            xu = 600
+            self.func = Griewank()
 
         super().__init__(n_var=n_var,
                          n_obj=n_obj,
