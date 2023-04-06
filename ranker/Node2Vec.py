@@ -31,8 +31,9 @@ def load_edges(generation, archive=None):
     train_pos_u, train_pos_v = u[eids[test_size:]], v[eids[test_size:]]
 
     # Find all negative edges and split them for training and testing
-    adj = sp.coo_matrix((np.ones(len(u)), (u.numpy(), v.numpy())))
+
     try:
+        adj = sp.coo_matrix((np.ones(len(u)), (u.numpy(), v.numpy())))
         adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
         neg_u, neg_v = np.where(adj_neg != 0)
     except:
@@ -104,8 +105,8 @@ def load_edges_test(generation):
     g = MyDataDataset(positive, edge_list)[0]
     u, v = g.edges()
     test_pos_u, test_pos_v = u, v
-    adj = sp.coo_matrix((np.ones(len(u)), (u.numpy(), v.numpy())))
     try:
+        adj = sp.coo_matrix((np.ones(len(u)), (u.numpy(), v.numpy())))
         adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
         neg_u, neg_v = np.where(adj_neg != 0)
     except:
