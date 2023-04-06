@@ -75,24 +75,6 @@ def train_link_predictor(
     return model
 
 
-def plot_accuracy(accuracy,val_acc):
-
-    plt.plot()
-    plt.plot(accuracy)
-    # plt.plot(val_acc)
-    plt.title('train loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    # plt.legend(['train', 'val'], loc='upper left')
-    plt.show()
-    plt.plot()
-    plt.plot(val_acc)
-    # plt.plot(val_acc)
-    plt.title('Model Accuray')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    # plt.legend(['train', 'val'], loc='upper left')
-    plt.show()
 
 
 
