@@ -12,11 +12,12 @@ from ranker.MyData import MyDataDataset
 
 
 def load_edges(generation, archive=None):
-    if archive is not None:
+    if archive is None:
         edge = pd.read_csv(f"generations/{generation}.csv")
     else:
         edge = archive
     positive = edge[edge['Weight'] == 1]
+    negative = edge[edge['Weight'] == 0]
     src = edge['Src']
     dst = edge['Dst']
     edge_list = np.unique(pd.concat([src, dst]))
@@ -31,8 +32,12 @@ def load_edges(generation, archive=None):
 
     # Find all negative edges and split them for training and testing
     adj = sp.coo_matrix((np.ones(len(u)), (u.numpy(), v.numpy())))
-    adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
-    neg_u, neg_v = np.where(adj_neg != 0)
+    try:
+        adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
+        neg_u, neg_v = np.where(adj_neg != 0)
+    except:
+        neg_g = MyDataDataset(negative, edge_list)[0]
+        neg_u, neg_v = neg_g.edges()
 
     neg_eids = np.random.choice(len(neg_u), g.number_of_edges())
     test_neg_u, test_neg_v = neg_u[neg_eids[:test_size]], neg_v[neg_eids[:test_size]]
@@ -92,6 +97,7 @@ def test(pred,test_pos_g,test_neg_g,test_g,model,h=None):
 def load_edges_test(generation):
     edge = pd.read_csv(f"generations/{generation}.csv")
     positive = edge[edge['Weight'] == 1]
+    negative =edge[edge['Weight'] == 0]
     src = edge['Src']
     dst = edge['Dst']
     edge_list = np.unique(pd.concat([src, dst]))
@@ -101,8 +107,10 @@ def load_edges_test(generation):
     adj = sp.coo_matrix((np.ones(len(u)), (u.numpy(), v.numpy())))
     try:
         adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
+        neg_u, neg_v = np.where(adj_neg != 0)
     except:
-        pass
-    neg_u, neg_v = np.where(adj_neg != 0)
+        neg_g = MyDataDataset(negative, edge_list)[0]
+        neg_u, neg_v = neg_g.edges()
+
     test_neg_u, test_neg_v = neg_u, neg_v
     return test_neg_u, test_neg_v, test_pos_u, test_pos_v,g
