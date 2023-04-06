@@ -10,7 +10,7 @@ from ranker.Node2Vec import load_edges, apply_edges, train_model, load_edges_tes
 import warnings
 warnings.filterwarnings("ignore")
 
-dimension = 10
+dimension = 20
 benchmark ='Ackley'
 pop_size = 100
 

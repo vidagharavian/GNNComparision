@@ -74,5 +74,6 @@ main()
 rosenbrock last objective 10 : [6.60381283]
 rosenbrock last objective 20 :[18.16060861]
 ackley last objective 10 : 0.02869612
+ackley last objective 20 : [0.53113252]
 
 """
