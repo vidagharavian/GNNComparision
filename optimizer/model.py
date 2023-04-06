@@ -66,6 +66,10 @@ def main():
                    seed=1,
                    verbose=False, termination=get_termination("n_gen", 200))
 
-    print(res.X)
+    print(res.F)
 
 main()
+
+"""
+rosenbrock last objective 20 : [6.60381283]
+"""
