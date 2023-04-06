@@ -12,7 +12,7 @@ from utils import MyRounder
 
 generation = 1
 benchmark ='Ackley'
-dimension = 10
+dimension = 20
 pop_size = 100
 def binary_tournament(pop, P=(100*100,2), **kwargs):
     global generation
