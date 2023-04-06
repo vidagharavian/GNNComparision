@@ -23,7 +23,7 @@ class MyDataDataset(DGLDataset):
         self.edges_data['Src'] = [nodes_data[nodes_data['index'] == x].index.values[0] for x in self.edges_data['Src']]
         self.edges_data['Dst'] = [nodes_data[nodes_data['index'] == x].index.values[0] for x in self.edges_data['Dst']]
         nodes_data.drop(columns=['index'], inplace=True)
-        nodes_data = np.round(nodes_data.to_numpy(), 2).astype(np.float)
+        nodes_data = np.round(nodes_data.to_numpy(), 2).astype(np.float64)
         node_features = torch.from_numpy(nodes_data).type(torch.FloatTensor)
         edge_features = torch.from_numpy(self.edges_data['Weight'].to_numpy(dtype=double))
         edges_src = torch.from_numpy(self.edges_data['Src'].to_numpy(dtype=int))

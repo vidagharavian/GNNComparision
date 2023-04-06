@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 
 
-def plot_accuracy(accuracy,val_acc):
+def plot_accuracy(accuracy):
 
     plt.plot()
     plt.plot(accuracy)

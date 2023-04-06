@@ -12,7 +12,7 @@ from utils import MyRounder
 
 generation = 1
 benchmark ='RosenBrock'
-dimension = 20
+dimension = 50
 pop_size = 100
 def binary_tournament(pop, P=(100*100,2), **kwargs):
     global generation
@@ -51,7 +51,7 @@ class MySelection(TournamentSelection):
 
 
 def main():
-    problem = Optimizer(function_name=benchmark)
+    problem = Optimizer(function_name=benchmark,n_var=dimension)
     algorithm = GA(
         pop_size=pop_size,
         sampling=FloatRandomSampling(),
@@ -71,5 +71,6 @@ def main():
 main()
 
 """
-rosenbrock last objective 20 : [6.60381283]
+rosenbrock last objective 10 : [6.60381283]
+rosenbrock last objective 20 :[18.16060861]
 """

@@ -50,6 +50,7 @@ def create_archive(generation,archive_size=500):
         edges.append(edge)
         data_set = pd.concat(edges)
         if len(data_set)> archive_size:
-            data_set = data_set[len(data_set)-archive_size:]
+            data_set = data_set[:archive_size]
+            break
     return data_set
 
