@@ -17,4 +17,4 @@ def svr(accuracy,generation):
     pass
 
 
-plot_accuracy(accuracy=pd.read_csv("output/RosenBrock_d10_pop100_g200.csv")["test_roc"])
+plot_accuracy(accuracy=pd.read_csv("output/RosenBrock_d20_pop100_g50.csv")["test_roc"])
