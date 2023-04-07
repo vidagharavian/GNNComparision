@@ -5,7 +5,7 @@ import torch
 from ranker.MyData import GraphSAGE, MLPPredictor
 
 benchmark ='RosenBrock'
-dimension = 10
+dimension = 20
 pop_size = 100
 generations = 200
 archive_size = 15000

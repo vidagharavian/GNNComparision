@@ -31,8 +31,8 @@ def train_in_generation(generation,model):
     return model
 
 
-def test_in_generation(generation,model):
-    test_neg_u, test_neg_v, test_pos_u, test_pos_v, g = load_edges_test(generation)
+def test_in_generation(generation,model,edge_list):
+    test_neg_u, test_neg_v, test_pos_u, test_pos_v, g = load_edges_test(generation, edge_list)
     test_neg_g, test_pos_g = apply_edges(test_pos_u, test_pos_v, test_neg_u, test_neg_v, g)
     acc=test(pred, test_pos_g, test_neg_g, g, model)
     print('AUC', acc)

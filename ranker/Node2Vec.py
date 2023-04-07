@@ -108,13 +108,14 @@ def load_edge_pred(edge):
     return u,v,g
 
 
-def load_edges_test(generation):
+def load_edges_test(generation,edge_list=None):
     edge = pd.read_csv(f"../ranker/generations/{generation}.csv")
     positive = edge[edge['Weight'] == 1]
     negative = edge[edge['Weight'] == 0]
     src = edge['Src']
     dst = edge['Dst']
-    edge_list = np.unique(pd.concat([src, dst]))
+    if edge_list is None:
+        edge_list = np.unique(pd.concat([src, dst]))
     g = MyDataDataset(positive, edge_list)[0]
     u, v = g.edges()
     test_pos_u, test_pos_v = u, v

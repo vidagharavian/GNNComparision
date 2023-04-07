@@ -63,7 +63,7 @@ def create_P_test_train(P):
     return np.array(test_set), np.array(train_set)
 
 
-def update_test_f(pop, test_set):
+def update_test_f(pop, test_set,edges_list=None):
     source = []
     target = []
     label = []
@@ -78,8 +78,13 @@ def update_test_f(pop, test_set):
     feature =create_feature_vector(df,False)
     feature.to_csv("../ranker/features.csv",index=False)
     df = create_edge_vector_generation(df)
+    try:
+        last_df = pd.read_csv(f"../ranker/generations/{generation}.csv")
+        df = pd.concat([df,last_df])
+    except:
+        pass
     df.to_csv(f"../ranker/generations/{generation}.csv",index=False)
-    generation_roc = test_in_generation(generation, config.last_model)
+    generation_roc = test_in_generation(generation, config.last_model,edges_list)
     config.last_model_test_accuracy = generation_roc
     return pop
 
@@ -101,7 +106,7 @@ def update_pred_f(pop, pred_set):
     feature = create_feature_vector(df, False)
     feature.to_csv("../ranker/features.csv",index=False)
     df = create_edge_vector_generation(df)
-    df.to_csv(f"../ranker/generations/{generation}.csv",index=False)
+    # df.to_csv(f"../ranker/generations/{generation}.csv",index=False)
     generation_pred = pred_in_generation(df, config.last_model)
     df['Weight'] =generation_pred.numpy()
     df.apply(lambda x:calculate_pred_f(x,pop),axis=1)
@@ -128,8 +133,6 @@ def binary_tournament(pop, P=(100 * 100, 2), **kwargs):
 
     else:
         up_F=True
-
-
     # the result this function returns
     import numpy as np
     S = np.full(n_tournaments, -1, dtype=int)
@@ -150,11 +153,12 @@ def binary_tournament(pop, P=(100 * 100, 2), **kwargs):
         else:
             label.append(0)
             S[i] = b
-    df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
-    feature = create_feature_vector(df, False)
-    feature.to_csv("../ranker/features.csv",index=False)
-    df = create_edge_vector_generation(df)
-    df.to_csv(f"../ranker/generations/{generation}.csv",index=False)
+    if up_F:
+        df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
+        feature = create_feature_vector(df, False)
+        feature.to_csv("../ranker/features.csv",index=False)
+        df = create_edge_vector_generation(df)
+        df.to_csv(f"../ranker/generations/{generation}.csv",index=False)
     model = train_in_generation(generation,config.last_model)
     config.last_model = model
     generation += 1
