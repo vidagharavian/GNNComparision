@@ -18,8 +18,7 @@ data_set = []
 pred = MLPPredictor(32)
 
 optimizer = torch.optim.Adam(itertools.chain(last_model.parameters(), pred.parameters()), lr=0.01)
-
-
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 def surrogate_use_permission(generation):
     if last_model is None or generation < 3:
         return False

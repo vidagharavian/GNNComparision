@@ -10,6 +10,8 @@ import dgl.function as fn
 import torch.nn.functional as F
 
 
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+
 class MyDataDataset(DGLDataset):
     def __init__(self, edges_data, node_list):
         self.edges_data = edges_data
@@ -45,19 +47,20 @@ class MyDataDataset(DGLDataset):
 class GraphSAGE(nn.Module):
     def __init__(self, in_feats, h_feats, r_feats, drop_out):
         super(GraphSAGE, self).__init__()
-        self.conv1 = SAGEConv(in_feats, h_feats, 'mean')
-        self.conv2 = SAGEConv(h_feats, r_feats, 'mean')
-        self.conv3 = SAGEConv(r_feats, r_feats, 'mean')
+        self.conv1 = SAGEConv(in_feats, h_feats, 'mean').to(device)
+        self.conv2 = SAGEConv(h_feats, r_feats, 'mean').to(device)
+        self.conv3 = SAGEConv(r_feats, r_feats, 'mean').to(device)
         self.drop_out = drop_out
 
     def forward(self, g, in_feat):
-        h = self.conv1(g, in_feat)
-        h = F.relu(h)
-        h = self.conv2(g, h)
-        h = F.relu(h)
-        h = F.dropout(h, self.drop_out)
-        h = self.conv3(g, h)
-        h = F.softmax(h)
+        g, in_feat=g.to(device), in_feat.to(device)
+        h = self.conv1(g, in_feat).to(device)
+        h = F.relu(h).to(device)
+        h = self.conv2(g, h).to(device)
+        h = F.relu(h).to(device)
+        h = F.dropout(h, self.drop_out).to(device)
+        h = self.conv3(g, h).to(device)
+        h = F.softmax(h).to(device)
         return h
 
 
@@ -75,8 +78,8 @@ class DotPredictor(nn.Module):
 class MLPPredictor(nn.Module):
     def __init__(self, h_feats):
         super().__init__()
-        self.W1 = nn.Linear(h_feats * 2, h_feats)
-        self.W2 = nn.Linear(h_feats, 1)
+        self.W1 = nn.Linear(h_feats * 2, h_feats).to(device)
+        self.W2 = nn.Linear(h_feats, 1).to(device)
 
     def apply_edges(self, edges):
         """
@@ -95,11 +98,12 @@ class MLPPredictor(nn.Module):
         dict
             A dictionary of new edge features.
         """
-        h = torch.cat([edges.src['h'], edges.dst['h']], 1)
-        return {'score': self.W2(F.relu(self.W1(h))).squeeze(1)}
+        h = torch.cat([edges.src['h'], edges.dst['h']], 1).to(device)
+        return {'score': self.W2(F.relu(self.W1(h).to(device)).to(device)).to(device).squeeze(1)}
 
     def forward(self, g, h):
+        g=g.to(device)
         with g.local_scope():
-            g.ndata['h'] = h
+            g.ndata['h'] = h.to(device)
             g.apply_edges(self.apply_edges)
             return g.edata['score']
