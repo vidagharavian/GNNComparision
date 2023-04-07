@@ -14,6 +14,7 @@ from pymoo.termination import get_termination
 import config
 from config import benchmark, dimension, pop_size, generations, get_test_split
 from optimizer import Optimizer
+from ranker.MyData import GraphSAGE
 from ranker.data_preparations import create_feature_vector, create_edge_vector_generation
 from ranker.main import train_in_generation, test_in_generation, pred_in_generation
 from utils import MyRounder
@@ -90,8 +91,8 @@ def update_test_f(pop, test_set,edges_list=None):
 
 
 def calculate_pred_f(x, pop):
-    pop[int(x["Src"])].F = [x["Weight"]]
-    pop[int(x["Dst"])].F = [1 - x['Weight']]
+    pop[int(x["Src"])].F = [1 -x["Weight"]]
+    pop[int(x["Dst"])].F = [x['Weight']]
 
 
 def update_pred_f(pop, pred_set):
@@ -108,7 +109,7 @@ def update_pred_f(pop, pred_set):
     df = create_edge_vector_generation(df)
     # df.to_csv(f"../ranker/generations/{generation}.csv",index=False)
     generation_pred = pred_in_generation(df, config.last_model)
-    df['Weight'] =generation_pred.numpy()
+    df['Weight'] =generation_pred.cpu().numpy()
     df.apply(lambda x:calculate_pred_f(x,pop),axis=1)
     return pop
 
@@ -186,10 +187,23 @@ def main():
                    seed=1,
                    verbose=False, termination=get_termination("n_gen", generations))
 
-    print(res.F)
+    F_last =problem.func.evaluate(res.X)
+    print(f"last objective {F_last}")
+    return F_last
 
 
-main()
+for j in [10,20]:
+    run = []
+    F_last = []
+    config.dimension=j
+    for i in range(10):
+        last_objective =main()
+        run.append(i)
+        F_last.append(last_objective)
+        generation=1
+        config.last_model= GraphSAGE(dimension, 64,32,0.2)
+        df = pd.DataFrame({"run":run,"last_objective":F_last})
+        df.to_csv(f"{config.benchmark}_{dimension}.csv")
 
 """
 rosenbrock last objective 10 : [6.60381283]

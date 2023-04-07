@@ -5,7 +5,8 @@ import torch.nn.functional as F
 import numpy as np
 import scipy.sparse as sp
 from sklearn.metrics import roc_auc_score
-from torchviz import make_dot
+
+from config import device
 from ranker.MyData import MyDataDataset
 
 
@@ -34,6 +35,8 @@ def load_edges(generation, archive=None):
         adj = sp.coo_matrix((np.ones(len(u)), (u.numpy(), v.numpy())))
         adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
         neg_u, neg_v = np.where(adj_neg != 0)
+        neg_u, neg_v = torch.from_numpy(neg_u).type(torch.IntTensor).to(device), torch.from_numpy(neg_v).type(
+            torch.IntTensor).to(device)
     except:
         neg_g = MyDataDataset(negative, edge_list)[0]
         neg_u, neg_v = neg_g.edges()
@@ -42,7 +45,7 @@ def load_edges(generation, archive=None):
     test_neg_u, test_neg_v = neg_u[neg_eids[:test_size]], neg_v[neg_eids[:test_size]]
     train_neg_u, train_neg_v = neg_u[neg_eids[test_size:]], neg_v[neg_eids[test_size:]]
     train_g = dgl.remove_edges(g, eids[:test_size])
-    return test_neg_u, test_neg_v, train_neg_u, train_neg_v, test_pos_u, test_pos_v, train_pos_u, train_pos_v, g, train_g
+    return test_neg_u.to(device), test_neg_v.to(device), train_neg_u.to(device), train_neg_v.to(device), test_pos_u.to(device), test_pos_v.to(device), train_pos_u.to(device), train_pos_v.to(device), g.to(device), train_g.to(device)
 
 
 def apply_edges(train_pos_u, train_pos_v, train_neg_u, train_neg_v, g):
@@ -51,16 +54,20 @@ def apply_edges(train_pos_u, train_pos_v, train_neg_u, train_neg_v, g):
     return train_neg_g, train_pos_g
 
 
-def compute_loss(pos_score, neg_score):
-    scores = torch.cat([pos_score, neg_score])
-    labels = torch.cat([torch.ones(pos_score.shape[0]), torch.zeros(neg_score.shape[0])])
-    return F.binary_cross_entropy_with_logits(scores, labels)
+# def compute_loss(pos_score, neg_score):
+#     scores = torch.cat([pos_score, neg_score]).to(device)
+#     labels = torch.cat([torch.ones(pos_score.shape[0]), torch.zeros(neg_score.shape[0])]).to(device)
+#     return F.binary_cross_entropy_with_logits(scores, labels)
 
+def compute_loss(pos_score, neg_score):
+    # Margin loss
+    n_edges = pos_score.shape[0]
+    return (1 - pos_score + neg_score.view(n_edges, -1)).clamp(min=0).mean()
 
 def compute_auc(pos_score, neg_score):
-    scores = torch.cat([pos_score, neg_score]).numpy()
+    scores = torch.cat([pos_score, neg_score]).cpu().numpy()
     labels = torch.cat(
-        [torch.ones(pos_score.shape[0]), torch.zeros(neg_score.shape[0])]).numpy()
+        [torch.ones(pos_score.shape[0]), torch.zeros(neg_score.shape[0])]).cpu().numpy()
     return roc_auc_score(labels, scores)
 
 
