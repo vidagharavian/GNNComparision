@@ -1,5 +1,3 @@
-
-
 import dgl
 import pandas as pd
 import torch
@@ -7,13 +5,13 @@ import torch.nn.functional as F
 import numpy as np
 import scipy.sparse as sp
 from sklearn.metrics import roc_auc_score
-
+from torchviz import make_dot
 from ranker.MyData import MyDataDataset
 
 
 def load_edges(generation, archive=None):
     if archive is None:
-        edge = pd.read_csv(f"generations/{generation}.csv")
+        edge = pd.read_csv(f"../ranker/generations/{generation}.csv")
     else:
         edge = archive
     positive = edge[edge['Weight'] == 1]
@@ -66,7 +64,7 @@ def compute_auc(pos_score, neg_score):
     return roc_auc_score(labels, scores)
 
 
-def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer,val_pos_g,val_neg_g):
+def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g):
     all_logits = []
     for e in range(50):
         # forward
@@ -74,17 +72,18 @@ def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer,val_po
         pos_score = pred(train_pos_g, h)
         neg_score = pred(train_neg_g, h)
         loss = compute_loss(pos_score, neg_score)
-        acc = test(pred,val_pos_g,val_neg_g,train_g,model,h)
+        acc = test(pred, val_pos_g, val_neg_g, train_g, model, h)
         # backward
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         if e % 5 == 0:
-            print('In epoch {}, loss: {} , val accuracy: {}'.format(e, loss,acc))
+            print('In epoch {}, loss: {} , val accuracy: {}'.format(e, loss, acc))
     return model
 
-def test(pred,test_pos_g,test_neg_g,test_g,model,h=None):
+
+def test(pred, test_pos_g, test_neg_g, test_g, model, h=None):
     if h is None:
         h = model(test_g, test_g.ndata['feat'])
     with torch.no_grad():
@@ -94,11 +93,25 @@ def test(pred,test_pos_g,test_neg_g,test_g,model,h=None):
     return acc
 
 
+def prediction(pred, pred_g, model):
+    h = model(pred_g, pred_g.ndata['feat'])
+    with torch.no_grad():
+        pos_score = pred(pred_g, h)
+    return pos_score
+
+def load_edge_pred(edge):
+    src = edge['Src']
+    dst = edge['Dst']
+    edge_list = np.unique(pd.concat([src, dst]))
+    g = MyDataDataset(edge, edge_list)[0]
+    u, v = g.edges()
+    return u,v,g
+
 
 def load_edges_test(generation):
-    edge = pd.read_csv(f"generations/{generation}.csv")
+    edge = pd.read_csv(f"../ranker/generations/{generation}.csv")
     positive = edge[edge['Weight'] == 1]
-    negative =edge[edge['Weight'] == 0]
+    negative = edge[edge['Weight'] == 0]
     src = edge['Src']
     dst = edge['Dst']
     edge_list = np.unique(pd.concat([src, dst]))
@@ -114,4 +127,4 @@ def load_edges_test(generation):
         neg_u, neg_v = neg_g.edges()
 
     test_neg_u, test_neg_v = neg_u, neg_v
-    return test_neg_u, test_neg_v, test_pos_u, test_pos_v,g
+    return test_neg_u, test_neg_v, test_pos_u, test_pos_v, g

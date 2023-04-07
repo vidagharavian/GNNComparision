@@ -46,7 +46,7 @@ def create_archive(generation,archive_size=500):
     edges =[]
     data_set =pd.DataFrame()
     for i in range(generation,0,-1):
-        edge =pd.read_csv(f"generations/{i}.csv")
+        edge =pd.read_csv(f"../ranker/generations/{i}.csv")
         edges.append(edge)
         data_set = pd.concat(edges)
         if len(data_set)> archive_size:

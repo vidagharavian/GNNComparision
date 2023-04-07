@@ -1,12 +1,13 @@
 import itertools
 
+import dgl
 import numpy as np
 import pandas as pd
 import torch
 
 from ranker.DGL_presentation import create_archive
 from ranker.MyData import GraphSAGE, MLPPredictor
-from ranker.Node2Vec import load_edges, apply_edges, train_model, load_edges_test, test
+from ranker.Node2Vec import load_edges, apply_edges, train_model, load_edges_test, test, load_edge_pred, prediction
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -29,12 +30,18 @@ def train_in_generation(generation,model):
     model = train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g)
     return model
 
+
 def test_in_generation(generation,model):
     test_neg_u, test_neg_v, test_pos_u, test_pos_v, g = load_edges_test(generation)
     test_neg_g, test_pos_g = apply_edges(test_pos_u, test_pos_v, test_neg_u, test_neg_v, g)
     acc=test(pred, test_pos_g, test_neg_g, g, model)
     print('AUC', acc)
     return acc
+
+
+def pred_in_generation(edges,model):
+    pred_u,pred_v,g = load_edge_pred(edges)
+    return prediction(pred, g, model)
 
 
 def main(generations:int):
@@ -54,6 +61,6 @@ def main(generations:int):
     df.to_csv(f"output/{benchmark}_d{dimension}_pop{pop_size}_g{generations}.csv")
 
 
-main(200)
+# main(200)
 
 

@@ -17,7 +17,7 @@ class MyDataDataset(DGLDataset):
         super().__init__(name='generation_data')
 
     def process(self):
-        nodes_data = pd.read_csv('./features.csv')
+        nodes_data = pd.read_csv('../ranker/features.csv')
         nodes_data = nodes_data[nodes_data.index.isin(self.node_list)]
         nodes_data.reset_index(inplace=True)
         self.edges_data['Src'] = [nodes_data[nodes_data['index'] == x].index.values[0] for x in self.edges_data['Src']]

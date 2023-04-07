@@ -1,30 +1,32 @@
-import json
+
 
 import numpy as np
 import pandas as pd
 
-hash_dict={}
+from config import hash_dict,data_set
 
 
-def create_feature_vector(input_dir="generations",gen_num=200):
+def create_feature_vector(df,save=True):
     global hash_dict
-    data_set =[]
-    for i in range(1,gen_num):
-        df = pd.read_csv(f"../optimizer/{input_dir}/{i}.csv")
-        source,target = df['source'],df['target']
-        for i,j in zip(source,target):
-            i = change_to_array(i)
-            hashed_i = hashFloatArray(i)
-            if hashed_i not in hash_dict.keys():
-                hash_dict[hashed_i]= len(data_set)
-                data_set.append(i)
-            j = change_to_array(j)
-            hashed_i = hashFloatArray(j)
-            if hashed_i not in hash_dict.keys():
+    global data_set
+    source, target = df['source'], df['target']
+    for i, j in zip(source, target):
+        # i = change_to_array(i)
+        hashed_i = hashFloatArray(i)
+        if hashed_i not in hash_dict.keys():
+            hash_dict[hashed_i] = len(data_set)
+            data_set.append(i)
+        # j = change_to_array(j)
+        hashed_i = hashFloatArray(j)
+        if hashed_i not in hash_dict.keys():
                 hash_dict[hashed_i] = len(data_set)
                 data_set.append(j)
-    data=pd.DataFrame.from_records(data_set)
-    data.to_csv("features.csv",index=False)
+    data = pd.DataFrame.from_records(data_set)
+    if save:
+        data.to_csv("./features.csv", index=False)
+    else:
+        return data
+
 
 
 def create_edge_vector(input_dir="generations",gen_num=200):
@@ -54,7 +56,19 @@ def change_to_array(i:str):
     i = np.fromstring(i, dtype=float, sep=' ')
     return i
 
-def create_edge_vector_generation(generation_path):
+def create_edge_vector_generation(df):
+    source, label, target = df['source'], df['label'], df['target']
+    data_set = []
+    for num, j in enumerate(label):
+        # array_source = change_to_array(source[num])
+        # array_target = change_to_array(target[num])
+        hashed_source = hashFloatArray(source[num])
+        hashed_target = hashFloatArray(target[num])
+        data_set.append({"Src": hash_dict[hashed_source], "Dst": hash_dict[hashed_target], "Weight": j})
+    data = pd.DataFrame.from_records(data_set)
+    return data
+
+def create_edge_vector_generations(generation_path):
     for i in range(1, 200):
         df = pd.read_csv(f"../optimizer/{generation_path}/{i}.csv")
         source, label, target = df['source'], df['label'], df['target']
@@ -68,8 +82,8 @@ def create_edge_vector_generation(generation_path):
         data = pd.DataFrame.from_records(data_set)
         data.to_csv(f"generations/{i}.csv")
 
-function_name ='Ackley'
-dimension = 20
-path = f"{function_name}/d{dimension}"
-create_feature_vector(path)
-create_edge_vector_generation(path)
+# function_name ='Ackley'
+# dimension = 20
+# path = f"{function_name}/d{dimension}"
+# create_feature_vector(path)
+# create_edge_vector_generations(path)
