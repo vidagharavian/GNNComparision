@@ -56,6 +56,7 @@ class GraphSAGE(nn.Module):
         g, in_feat=g.to(device), in_feat.to(device)
         h = self.conv1(g, in_feat).to(device)
         h = F.relu(h).to(device)
+        h = F.dropout(h, self.drop_out).to(device)
         h = self.conv2(g, h).to(device)
         h = F.relu(h).to(device)
         h = F.dropout(h, self.drop_out).to(device)

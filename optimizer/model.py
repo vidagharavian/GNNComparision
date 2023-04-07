@@ -1,6 +1,5 @@
 import os
 import random
-
 import numpy as np
 import pandas as pd
 from pymoo.algorithms.soo.nonconvex.ga import GA
@@ -21,7 +20,7 @@ from utils import MyRounder
 
 generation = 1
 problem = Optimizer(function_name=benchmark, n_var=dimension)
-
+counter =0
 
 def save_generation(df, generation, fitness_function, d):
     save_path = f"{fitness_function}/d{d}/"
@@ -64,7 +63,7 @@ def create_P_test_train(P):
     return np.array(test_set), np.array(train_set)
 
 
-def update_test_f(pop, test_set,edges_list=None):
+def update_test_f(pop, test_set):
     source = []
     target = []
     label = []
@@ -85,9 +84,9 @@ def update_test_f(pop, test_set,edges_list=None):
     except:
         pass
     df.to_csv(f"../ranker/generations/{generation}.csv",index=False)
-    generation_roc = test_in_generation(generation, config.last_model,edges_list)
+    generation_roc = test_in_generation(generation, config.last_model)
     config.last_model_test_accuracy = generation_roc
-    return pop
+    return pop,df
 
 
 def calculate_pred_f(x, pop):
@@ -95,7 +94,8 @@ def calculate_pred_f(x, pop):
     pop[int(x["Dst"])].F = [x['Weight']]
 
 
-def update_pred_f(pop, pred_set):
+def update_pred_f(pop, pred_set,edge_list,test_edges):
+    global counter
     source = []
     target = []
     label = []
@@ -108,9 +108,10 @@ def update_pred_f(pop, pred_set):
     feature.to_csv("../ranker/features.csv",index=False)
     df = create_edge_vector_generation(df)
     # df.to_csv(f"../ranker/generations/{generation}.csv",index=False)
-    generation_pred = pred_in_generation(df, config.last_model)
+    generation_pred = pred_in_generation(test_edges, config.last_model,df,edge_list)
     df['Weight'] =generation_pred.cpu().numpy()
     df.apply(lambda x:calculate_pred_f(x,pop),axis=1)
+    counter+=1
     return pop
 
 
@@ -126,9 +127,11 @@ def binary_tournament(pop, P=(100 * 100, 2), **kwargs):
     if generation > 3:
         up_F=False
         pred_set,test_set  = create_P_test_train(P)
-        update_test_f(pop,test_set)
+        import numpy as np
+        edge_list = np.concatenate((np.unique(np.array(pred_set).flatten()), np.unique(np.array(test_set).flatten())), axis=None)
+        pop,df =update_test_f(pop,test_set)
         if config.last_model_test_accuracy >0.7:
-            update_pred_f(pop,pred_set)
+            update_pred_f(pop,pred_set,edge_list,df)
         else:
             update_test_f(pop,pred_set)
 
@@ -195,6 +198,7 @@ def main():
 for j in [10,20]:
     run = []
     F_last = []
+    counters = []
     config.dimension=j
     for i in range(10):
         last_objective =main()
@@ -202,7 +206,8 @@ for j in [10,20]:
         F_last.append(last_objective)
         generation=1
         config.last_model= GraphSAGE(dimension, 64,32,0.2)
-        df = pd.DataFrame({"run":run,"last_objective":F_last})
+        counters.append(counter)
+        df = pd.DataFrame({"run":run,"last_objective":F_last,"usage_number":counter})
         df.to_csv(f"{config.benchmark}_{dimension}.csv")
 
 """

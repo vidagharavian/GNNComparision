@@ -1,7 +1,6 @@
 import dgl
 import pandas as pd
 import torch
-import torch.nn.functional as F
 import numpy as np
 import scipy.sparse as sp
 from sklearn.metrics import roc_auc_score
@@ -106,23 +105,22 @@ def prediction(pred, pred_g, model):
         pos_score = pred(pred_g, h)
     return pos_score
 
-def load_edge_pred(edge):
-    src = edge['Src']
-    dst = edge['Dst']
-    edge_list = np.unique(pd.concat([src, dst]))
+def load_edge_pred(edge,edge_list,pred_edges):
+    src = pred_edges['Src']
+    dst = pred_edges['Dst']
+    # edge_list = np.unique(pd.concat([src, dst]))
     g = MyDataDataset(edge, edge_list)[0]
-    u, v = g.edges()
+    u, v = torch.from_numpy(src.to_numpy(dtype=int)).to(device),torch.from_numpy(dst.to_numpy(dtype=int)).to(device)
     return u,v,g
 
 
-def load_edges_test(generation,edge_list=None):
+def load_edges_test(generation):
     edge = pd.read_csv(f"../ranker/generations/{generation}.csv")
     positive = edge[edge['Weight'] == 1]
     negative = edge[edge['Weight'] == 0]
     src = edge['Src']
     dst = edge['Dst']
-    if edge_list is None:
-        edge_list = np.unique(pd.concat([src, dst]))
+    edge_list = np.unique(pd.concat([src, dst]))
     g = MyDataDataset(positive, edge_list)[0]
     u, v = g.edges()
     test_pos_u, test_pos_v = u, v
