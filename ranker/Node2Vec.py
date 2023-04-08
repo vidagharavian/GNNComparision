@@ -1,13 +1,16 @@
+import itertools
+
 import dgl
 import pandas as pd
 import torch
 import numpy as np
 import scipy.sparse as sp
 from sklearn.metrics import roc_auc_score
+from torch import optim
 
 from config import device
-from ranker.MyData import MyDataDataset
-
+from ranker.MyData import MyDataDataset, MLPPredictor
+import torch.nn.functional as F
 
 def load_edges(generation, archive=None):
     if archive is None:
@@ -59,9 +62,10 @@ def apply_edges(train_pos_u, train_pos_v, train_neg_u, train_neg_v, g):
 #     return F.binary_cross_entropy_with_logits(scores, labels)
 
 def compute_loss(pos_score, neg_score):
-    # Margin loss
-    n_edges = pos_score.shape[0]
-    return (1 - pos_score + neg_score.view(n_edges, -1)).clamp(min=0).mean()
+
+    scores = torch.cat([pos_score, neg_score]).to(device)
+    labels = torch.cat([torch.ones(pos_score.shape[0]), torch.zeros(neg_score.shape[0])]).to(device)
+    return F.binary_cross_entropy_with_logits(scores, labels)
 
 def compute_auc(pos_score, neg_score):
     scores = torch.cat([pos_score, neg_score]).cpu().numpy()
@@ -71,7 +75,11 @@ def compute_auc(pos_score, neg_score):
 
 
 def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g):
-    all_logits = []
+    model.reset_params()
+    pred.reset_params()
+    model.train()
+    pred.train()
+    opt = torch.optim.Adam(itertools.chain(model.parameters(), pred.parameters()), lr=0.001)
     for e in range(50):
         # forward
         h = model(train_g, train_g.ndata['feat'])
@@ -80,37 +88,43 @@ def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_p
         loss = compute_loss(pos_score, neg_score)
         acc = test(pred, val_pos_g, val_neg_g, train_g, model, h)
         # backward
-        optimizer.zero_grad()
+        opt.zero_grad()
         loss.backward()
-        optimizer.step()
+        opt.step()
 
         if e % 5 == 0:
             print('In epoch {}, loss: {} , val accuracy: {}'.format(e, loss, acc))
     return model
 
-
+@torch.no_grad()
 def test(pred, test_pos_g, test_neg_g, test_g, model, h=None):
+    model.eval()
     if h is None:
         h = model(test_g, test_g.ndata['feat'])
-    with torch.no_grad():
-        pos_score = pred(test_pos_g, h)
-        neg_score = pred(test_neg_g, h)
-        acc = compute_auc(pos_score, neg_score)
+
+    pos_score = pred(test_pos_g, h)
+    neg_score = pred(test_neg_g, h)
+    acc = compute_auc(pos_score, neg_score)
     return acc
 
-
-def prediction(pred, pred_g, model):
-    h = model(pred_g, pred_g.ndata['feat'])
-    with torch.no_grad():
-        pos_score = pred(pred_g, h)
+@torch.no_grad()
+def prediction(pred, pred_g,g, model):
+    model.eval()
+    h = model(g, g.ndata['feat'])
+    pos_score = pred(pred_g, h)
     return pos_score
 
-def load_edge_pred(edge,edge_list,pred_edges):
-    src = pred_edges['Src']
-    dst = pred_edges['Dst']
-    # edge_list = np.unique(pd.concat([src, dst]))
-    g = MyDataDataset(edge, edge_list)[0]
-    u, v = torch.from_numpy(src.to_numpy(dtype=int)).to(device),torch.from_numpy(dst.to_numpy(dtype=int)).to(device)
+def load_edge_pred(edge,df_list):
+    src = df_list['Src']
+    dst = df_list['Dst']
+    edge_list = np.unique(pd.concat([src, dst]))
+    g = MyDataDataset(df_list[df_list["Weight"]==1],edge_list)[0]
+    nodes_data = pd.read_csv('../ranker/features.csv')
+    nodes_data = nodes_data[nodes_data.index.isin(edge_list)]
+    nodes_data.reset_index(inplace=True)
+    edge['Src'] = [nodes_data[nodes_data['index'] == x].index.values[0] for x in edge['Src']]
+    edge['Dst'] = [nodes_data[nodes_data['index'] == x].index.values[0] for x in edge['Dst']]
+    u, v = torch.from_numpy(edge['Src'].to_numpy(dtype=int)).to(device),torch.from_numpy(edge['Dst'].to_numpy(dtype=int)).to(device)
     return u,v,g
 
 

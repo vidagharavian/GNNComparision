@@ -4,10 +4,12 @@ import pandas as pd
 import torch
 from dgl.data import DGLDataset
 from dgl.nn.pytorch import SAGEConv
+from dgllife.model import HadamardLinkPredictor
 from numpy import double
 from torch import nn
 import dgl.function as fn
 import torch.nn.functional as F
+
 
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -45,24 +47,23 @@ class MyDataDataset(DGLDataset):
 # ----------- 2. create model -------------- #
 # build a two-layer GraphSAGE model
 class GraphSAGE(nn.Module):
-    def __init__(self, in_feats, h_feats, r_feats, drop_out):
+    def __init__(self, in_feats, h_feats, r_feats):
         super(GraphSAGE, self).__init__()
-        self.conv1 = SAGEConv(in_feats, h_feats, 'mean').to(device)
-        self.conv2 = SAGEConv(h_feats, r_feats, 'mean').to(device)
+        self.conv1 = SAGEConv(in_feats, h_feats, 'mean',activation=F.relu).to(device)
+        self.conv2 = SAGEConv(h_feats, r_feats, 'mean',activation=F.relu).to(device)
         self.conv3 = SAGEConv(r_feats, r_feats, 'mean').to(device)
-        self.drop_out = drop_out
 
     def forward(self, g, in_feat):
         g, in_feat=g.to(device), in_feat.to(device)
         h = self.conv1(g, in_feat).to(device)
-        h = F.relu(h).to(device)
-        h = F.dropout(h, self.drop_out).to(device)
         h = self.conv2(g, h).to(device)
-        h = F.relu(h).to(device)
-        h = F.dropout(h, self.drop_out).to(device)
         h = self.conv3(g, h).to(device)
-        h = F.softmax(h).to(device)
         return h
+
+    def reset_params(self):
+        for layer in self.children():
+            if hasattr(layer,"reset_parameters"):
+                layer.reset_parameters()
 
 
 class DotPredictor(nn.Module):
@@ -80,7 +81,7 @@ class MLPPredictor(nn.Module):
     def __init__(self, h_feats):
         super().__init__()
         self.W1 = nn.Linear(h_feats * 2, h_feats).to(device)
-        self.W2 = nn.Linear(h_feats, 1).to(device)
+        self.W2 = nn.Linear(h_feats,2).to(device)
 
     def apply_edges(self, edges):
         """
@@ -100,10 +101,29 @@ class MLPPredictor(nn.Module):
             A dictionary of new edge features.
         """
         h = torch.cat([edges.src['h'], edges.dst['h']], 1).to(device)
-        return {'score': self.W2(F.relu(self.W1(h).to(device)).to(device)).to(device).squeeze(1)}
+        x=F.softmax(self.W2(F.relu(self.W1(h).to(device)).to(device))).to(device).squeeze(1)
+        return {'score': x[:,0]}
+
+    def reset_params(self):
+        for layer in self.children():
+            if hasattr(layer,"reset_parameters"):
+                layer.reset_parameters()
 
     def forward(self, g, h):
         g=g.to(device)
+        with g.local_scope():
+            g.ndata['h'] = h.to(device)
+            g.apply_edges(self.apply_edges)
+            return g.edata['score']
+
+class MyHadamardLinkPredictor(HadamardLinkPredictor):
+
+    def apply_edges(self,edges):
+        x=super().forward(edges.src['h'], edges.dst['h']).to(device).squeeze(1)
+        return {'score': x}
+
+    def forward(self, g, h):
+        g = g.to(device)
         with g.local_scope():
             g.ndata['h'] = h.to(device)
             g.apply_edges(self.apply_edges)

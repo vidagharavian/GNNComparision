@@ -30,7 +30,7 @@ class Optimizer(ElementwiseProblem):
 
     def _evaluate(self, x, out, *args, **kwargs):
 
-        out["F"] =1
+        out["F"] =self.func.evaluate(x)
 
 
 

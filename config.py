@@ -1,24 +1,28 @@
 import itertools
 
 import torch
+from ranker.MyData import GraphSAGE, MLPPredictor, MyHadamardLinkPredictor
 
-from ranker.MyData import GraphSAGE, MLPPredictor
-
-benchmark ='RosenBrock'
-dimension = 20
+benchmark ='Ackley'
+dimension = 10
 pop_size = 100
-generations = 200
+generations = 30
 archive_size = 15000
 last_model_test_accuracy = 0
-last_model = GraphSAGE(dimension, 64,32,0.2)
+last_model = GraphSAGE(dimension, 64,32)
 hash_dict = {}
 data_set = []
 
 # You can replace DotPredictor with MLPPredictor.
 pred = MLPPredictor(32)
 
-optimizer = torch.optim.Adam(itertools.chain(last_model.parameters(), pred.parameters()), lr=0.01)
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+# pred = MyHadamardLinkPredictor(in_feats=32,
+#                                       hidden_feats=16,
+#                                       num_layers=2,
+#                                       n_tasks=1,
+#                                       dropout=0.1).to(device)
+optimizer = torch.optim.Adam(itertools.chain(last_model.parameters(), pred.parameters()), lr=0.001)
 def surrogate_use_permission(generation):
     if last_model is None or generation < 3:
         return False
@@ -28,10 +32,8 @@ def surrogate_use_permission(generation):
 def get_test_split(generation):
     if generation<4:
         return 1
-    elif generation< 10:
-        return 0.2
     else:
-        return 0.1
+        return 0.2
 
 
 
