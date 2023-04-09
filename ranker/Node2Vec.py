@@ -6,11 +6,12 @@ import torch
 import numpy as np
 import scipy.sparse as sp
 from sklearn.metrics import roc_auc_score
-from torch import optim
 
-from config import device
-from ranker.MyData import MyDataDataset, MLPPredictor
+
+from ranker.MyData import MyDataDataset
 import torch.nn.functional as F
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def load_edges(generation, archive=None):
     if archive is None:
@@ -77,20 +78,21 @@ def compute_auc(pos_score, neg_score):
 def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g):
     model.reset_params()
     pred.reset_params()
+    torch.cuda.empty_cache()
     model.train()
     pred.train()
-    opt = torch.optim.Adam(itertools.chain(model.parameters(), pred.parameters()), lr=0.001)
-    for e in range(50):
+    for e in range(100):
         # forward
         h = model(train_g, train_g.ndata['feat'])
         pos_score = pred(train_pos_g, h)
         neg_score = pred(train_neg_g, h)
         loss = compute_loss(pos_score, neg_score)
         acc = test(pred, val_pos_g, val_neg_g, train_g, model, h)
+        optimizer.zero_grad()
+        loss.backward(retain_graph=True)
         # backward
-        opt.zero_grad()
-        loss.backward()
-        opt.step()
+
+        optimizer.step()
 
         if e % 5 == 0:
             print('In epoch {}, loss: {} , val accuracy: {}'.format(e, loss, acc))
@@ -98,7 +100,7 @@ def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_p
 
 @torch.no_grad()
 def test(pred, test_pos_g, test_neg_g, test_g, model, h=None):
-    model.eval()
+    # model.eval()
     if h is None:
         h = model(test_g, test_g.ndata['feat'])
 

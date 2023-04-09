@@ -3,12 +3,10 @@
 import numpy as np
 import pandas as pd
 
-from config import hash_dict,data_set
+import config
 
 
-def create_feature_vector(df,save=True):
-    global hash_dict
-    global data_set
+def create_feature_vector(df,save=True,hash_dict={},data_set=[]):
     source, target = df['source'], df['target']
     for i, j in zip(source, target):
         # i = change_to_array(i)
@@ -25,12 +23,11 @@ def create_feature_vector(df,save=True):
     if save:
         data.to_csv("./features.csv", index=False)
     else:
-        return data
+        return data,hash_dict,data_set
 
 
 
-def create_edge_vector(input_dir="generations",gen_num=200):
-    global hash_dict
+def create_edge_vector(input_dir="generations",gen_num=200,hash_dict={}):
     data_set = []
     for i in range(1, gen_num):
         df = pd.read_csv(f"../optimizer/{input_dir}/{i}.csv")
@@ -56,7 +53,7 @@ def change_to_array(i:str):
     i = np.fromstring(i, dtype=float, sep=' ')
     return i
 
-def create_edge_vector_generation(df):
+def create_edge_vector_generation(df,hash_dict):
     source, label, target = df['source'], df['label'], df['target']
     data_set = []
     for num, j in enumerate(label):
@@ -66,7 +63,7 @@ def create_edge_vector_generation(df):
         hashed_target = hashFloatArray(target[num])
         data_set.append({"Src": hash_dict[hashed_source], "Dst": hash_dict[hashed_target], "Weight": j})
     data = pd.DataFrame.from_records(data_set)
-    return data
+    return data,hash_dict
 
 def create_edge_vector_generations(generation_path):
     for i in range(1, 200):
@@ -78,7 +75,7 @@ def create_edge_vector_generations(generation_path):
             array_target = change_to_array(target[num])
             hashed_source = hashFloatArray(array_source)
             hashed_target = hashFloatArray(array_target)
-            data_set.append({"Src":hash_dict[hashed_source], "Dst":hash_dict[hashed_target], "Weight":j})
+            data_set.append({"Src":config.hash_dict[hashed_source], "Dst":config.hash_dict[hashed_target], "Weight":j})
         data = pd.DataFrame.from_records(data_set)
         data.to_csv(f"generations/{i}.csv")
 

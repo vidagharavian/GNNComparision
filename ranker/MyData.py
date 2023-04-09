@@ -49,14 +49,16 @@ class MyDataDataset(DGLDataset):
 class GraphSAGE(nn.Module):
     def __init__(self, in_feats, h_feats, r_feats):
         super(GraphSAGE, self).__init__()
-        self.conv1 = SAGEConv(in_feats, h_feats, 'mean',activation=F.relu).to(device)
-        self.conv2 = SAGEConv(h_feats, r_feats, 'mean',activation=F.relu).to(device)
+        self.conv1 = SAGEConv(in_feats, h_feats, 'lstm').to(device)
+        self.conv2 = SAGEConv(h_feats, r_feats, 'mean').to(device)
         self.conv3 = SAGEConv(r_feats, r_feats, 'mean').to(device)
 
     def forward(self, g, in_feat):
         g, in_feat=g.to(device), in_feat.to(device)
         h = self.conv1(g, in_feat).to(device)
+        h= F.relu(h)
         h = self.conv2(g, h).to(device)
+        h = F.relu(h)
         h = self.conv3(g, h).to(device)
         return h
 
@@ -101,13 +103,12 @@ class MLPPredictor(nn.Module):
             A dictionary of new edge features.
         """
         h = torch.cat([edges.src['h'], edges.dst['h']], 1).to(device)
-        x=F.softmax(self.W2(F.relu(self.W1(h).to(device)).to(device))).to(device).squeeze(1)
-        return {'score': x[:,0]}
+        x=F.softmax(self.W2(F.relu(self.W1(h)).to(device))).to(device).squeeze(1)
+        return {'score': x[:,1]}
 
     def reset_params(self):
         for layer in self.children():
-            if hasattr(layer,"reset_parameters"):
-                layer.reset_parameters()
+            layer.reset_parameters()
 
     def forward(self, g, h):
         g=g.to(device)
@@ -128,3 +129,6 @@ class MyHadamardLinkPredictor(HadamardLinkPredictor):
             g.ndata['h'] = h.to(device)
             g.apply_edges(self.apply_edges)
             return g.edata['score']
+
+    def reset_params(self):
+        self.reset_parameters()

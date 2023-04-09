@@ -4,7 +4,7 @@ import dgl
 import numpy as np
 import pandas as pd
 
-from config import optimizer
+
 from ranker.DGL_presentation import create_archive
 from ranker.Node2Vec import load_edges, apply_edges, train_model, load_edges_test, test, load_edge_pred, prediction
 import warnings
@@ -20,15 +20,13 @@ pop_size = 100
 
 
 
-def train_in_generation(generation,model,pred):
-    model.reset_params()
-    pred.reset_params()
+def train_in_generation(generation,model,pred,optimizer):
     val_neg_u, val_neg_v, train_neg_u, train_neg_v, val_pos_u, val_pos_v, train_pos_u, train_pos_v, g, train_g = load_edges(
         generation, create_archive(generation, 15000))
     train_neg_g, train_pos_g = apply_edges(train_pos_u, train_pos_v, train_neg_u, train_neg_v, g)
     val_neg_g, val_pos_g = apply_edges(val_pos_u, val_pos_v, val_neg_u, val_neg_v, g)
-    model = train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g)
-    return model
+    return train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g)
+
 
 
 def test_in_generation(generation,model,pred):
