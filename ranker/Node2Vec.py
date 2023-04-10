@@ -76,9 +76,6 @@ def compute_auc(pos_score, neg_score):
 
 
 def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g):
-    model.reset_params()
-    pred.reset_params()
-    torch.cuda.empty_cache()
     model.train()
     pred.train()
     for e in range(100):
