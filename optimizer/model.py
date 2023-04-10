@@ -15,6 +15,7 @@ from pymoo.termination import get_termination
 
 from config import Config
 from optimizer import Optimizer
+from optimizer.termination import ObjectiveTermination
 from ranker.main import train_in_generation, test_in_generation, pred_in_generation
 
 
@@ -173,11 +174,12 @@ def main():
     #     n_diff = 2
     #
     # )
+    best_solution = 0.04
 
     res = minimize(problem,
                    algorithm,
                    seed=1,
-                   verbose=False, termination=get_termination("n_gen", config.generations))
+                   verbose=False, termination=ObjectiveTermination(best_solution={"n_gen":generations}))
 
     F_last = problem.func.evaluate(res.X)
     print(f"last objective {F_last}")
