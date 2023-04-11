@@ -11,11 +11,10 @@ from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.operators.selection.tournament import TournamentSelection
 from pymoo.optimize import minimize
-from pymoo.termination import get_termination
 
 from config import Config
 from optimizer import Optimizer
-from optimizer.termination import ObjectiveTermination
+from termination import ObjectiveTermination
 from ranker.main import train_in_generation, test_in_generation, pred_in_generation
 
 
@@ -104,7 +103,7 @@ def binary_tournament(pop, P=(100 * 100, 2), **kwargs):
     n_tournaments, n_competitors = P.shape
     if n_competitors != 2:
         raise Exception("Only pressure=2 allowed for binary tournament!")
-    if gen < 0:
+    if gen > 3:
         pred_set, test_set = create_P_test_train(P, gen)
         S1 = update_test_f(pop, test_set, problem, gen)
         if config.last_model_test_accuracy > 0.8:
@@ -135,12 +134,12 @@ def binary_tournament(pop, P=(100 * 100, 2), **kwargs):
             else:
                 label.append(0)
                 S[i] = b
-    #     df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
-    #     feature = config.create_feature_vector(df, False)
-    #     feature.to_csv("../ranker/features.csv", index=False)
-    #     df = config.create_edge_vector_generation(df)
-    #     df.to_csv(f"../ranker/generations/{gen}.csv", index=False)
-    # config.last_model = train_in_generation(gen, config.last_model, config.pred,config.optimizer)
+        df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
+        feature = config.create_feature_vector(df, False)
+        feature.to_csv("../ranker/features.csv", index=False)
+        df = config.create_edge_vector_generation(df)
+        df.to_csv(f"../ranker/generations/{gen}.csv", index=False)
+    config.last_model = train_in_generation(gen, config.last_model, config.pred,config.optimizer)
     config.current_gen += 1
     return S
 
@@ -174,12 +173,13 @@ def main():
     #     n_diff = 2
     #
     # )
-    best_solution = 0.04
+    best_solution = pd.read_csv(f"output/best_{config.benchmark}_{config.dimension}.csv")
+    best_solution=best_solution["last_objective"][0]
 
     res = minimize(problem,
                    algorithm,
                    seed=1,
-                   verbose=False, termination=ObjectiveTermination(best_solution={"n_gen":generations}))
+                   verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"n_max_evals":config.generations*config.pop_size*2,"config":config}))
 
     F_last = problem.func.evaluate(res.X)
     print(f"last objective {F_last}")
@@ -206,6 +206,7 @@ F_last = []
 counters = []
 generations =[]
 for i in range(10):
+    delete_files()
     config = Config()
     last_objective = main()
     run.append(i)
@@ -213,9 +214,9 @@ for i in range(10):
     counters.append(config.counter)
     generations.append(config.current_gen)
     df = pd.DataFrame({"run": run, "last_objective": F_last, "usage_number": counters,"generation":generations})
-    df.to_csv(f"best_{config.benchmark}_{Config.dimension}.csv")
+    df.to_csv(f"{config.benchmark}_{Config.dimension}.csv")
     config.reset_params()
-    # delete_files()
+
 
 """
 rosenbrock last objective 10 : [6.60381283]
