@@ -190,7 +190,7 @@ def delete_files():
     dir = "generations"
 
     # Path
-    location = "C:/Users/vghar/PycharmProjects/GNNComparision/ranker/"
+    location = "../ranker/"
     path = os.path.join(location, dir)
     path2 = os.path.join(location, "features.csv")
     # Remove the specified
