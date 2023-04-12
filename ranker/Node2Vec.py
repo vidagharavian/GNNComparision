@@ -78,7 +78,7 @@ def compute_auc(pos_score, neg_score):
 def train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g):
     model.train()
     pred.train()
-    for e in range(100):
+    for e in range(50):
         # forward
         h = model(train_g, train_g.ndata['feat'])
         pos_score = pred(train_pos_g, h)
