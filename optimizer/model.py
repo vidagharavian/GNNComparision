@@ -8,6 +8,7 @@ import pandas as pd
 
 from pymoo.algorithms.soo.nonconvex.ga import GA
 
+
 from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.operators.selection.tournament import TournamentSelection
 from pymoo.optimize import minimize
@@ -180,6 +181,10 @@ def main():
                    algorithm,
                    seed=1,
                    verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"n_max_evals":config.generations*config.pop_size*2,"config":config}))
+    # res = minimize(problem,
+    #                algorithm,
+    #                seed=1,
+    #                verbose=False, termination=get_termination("n_gen", config.generations))
 
     F_last = problem.func.evaluate(res.X)
     print(f"last objective {F_last}")
@@ -195,9 +200,12 @@ def delete_files():
     path2 = os.path.join(location, "features.csv")
     # Remove the specified
     # file path
-    shutil.rmtree(path, ignore_errors=True)
-    os.remove(path2)
-    print("% s has been removed successfully" % dir)
+    try:
+        shutil.rmtree(path, ignore_errors=True)
+        os.remove(path2)
+        print("% s has been removed successfully" % dir)
+    except FileNotFoundError:
+        print("% s has been removed successfully" % dir)
     os.mkdir(path)
 
 
@@ -205,7 +213,7 @@ run = []
 F_last = []
 counters = []
 generations =[]
-for i in range(10):
+for i in range(9):
     delete_files()
     config = Config()
     last_objective = main()
