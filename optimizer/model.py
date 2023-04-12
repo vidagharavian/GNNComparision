@@ -139,7 +139,10 @@ def binary_tournament(pop, P=(100 * 100, 2), **kwargs):
         feature.to_csv("../ranker/features.csv", index=False)
         df = config.create_edge_vector_generation(df)
         df.to_csv(f"../ranker/generations/{gen}.csv", index=False)
-    config.last_model = train_in_generation(gen, config.last_model, config.pred,config.optimizer)
+    try:
+        config.last_model = train_in_generation(gen, config.last_model, config.pred,config.optimizer,config.archive_size)
+    except ValueError:
+        pass
     config.current_gen += 1
     return S
 
@@ -179,7 +182,7 @@ def main():
     res = minimize(problem,
                    algorithm,
                    seed=1,
-                   verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"n_max_evals":config.generations*config.pop_size*2,"config":config}))
+                   verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"n_max_evals":config.generations*config.pop_size,"config":config}))
 
     F_last = problem.func.evaluate(res.X)
     print(f"last objective {F_last}")
@@ -205,7 +208,7 @@ run = []
 F_last = []
 counters = []
 generations =[]
-for i in range(10):
+for i in range(5):
     delete_files()
     config = Config()
     last_objective = main()
