@@ -7,7 +7,7 @@ from ranker.MyData import GraphSAGE, MLPPredictor
 
 
 class Config():
-    benchmark = 'RosenBrock'
+    benchmark = 'Ackley'
     dimension = 20
     pop_size = 100
     generations = 300
