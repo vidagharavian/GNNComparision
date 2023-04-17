@@ -8,13 +8,14 @@ from ranker.MyData import GraphSAGE, MLPPredictor
 
 class Config():
     benchmark = 'Ackley'
-    dimension = 20
+    dimension = 10
     pop_size = 100
     generations = 300
     archive_size = 1000
     current_gen = 1
     counter = 0
     last_model_test_accuracy = 0
+    algorithm ="DE"
 
     hash_dict = {}
     data_set = []

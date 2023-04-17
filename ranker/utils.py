@@ -19,4 +19,4 @@ def svr(accuracy,generation):
     pass
 
 
-plot_accuracy("Ackley",100,200)
+plot_accuracy("Griewank",100,200)
