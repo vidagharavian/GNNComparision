@@ -10,7 +10,7 @@ class ObjectiveTermination(DefaultSingleObjectiveTermination):
         super().__init__(xtol, cvtol, ftol, period, **kwargs)
 
     def update(self, algorithm):
-        algorithm.evaluator.n_eval = int((self.config.counter*0.3 + (algorithm.n_gen-self.config.counter))*self.config.pop_size)
+        # algorithm.evaluator.n_eval = int((self.config.counter*0.3 + (algorithm.n_gen-self.config.counter))*self.config.pop_size)
         F= [i.f for i in algorithm.off]
         min_f = min(F)
         if min_f <= self.best_solution:

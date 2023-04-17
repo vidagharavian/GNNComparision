@@ -4,9 +4,11 @@ import shutil
 
 import numpy as np
 import pandas as pd
+import torch
 
 from pymoo.operators.selection.tournament import TournamentSelection
 from sklearn.metrics import roc_auc_score
+from torch import Tensor
 
 from config import Config
 from ranker.DGL_presentation import create_archive
@@ -57,10 +59,11 @@ def update_test_f(pop, test_set, problem, gen, config):
         pass
     m.to_csv(f"../ranker/generations/{gen}.csv", index=False)
     label = m['Weight'].values.copy()
+    # label = torch.from_numpy(label).to("cuda:0")
     last_df = create_archive(gen-1,archive_size=config.archive_size)
     prediction_score = get_prediction_score(m,gen,config,last_df)
 
-    config.last_model_test_accuracy =roc_auc_score(label, prediction_score)
+    config.last_model_test_accuracy =roc_auc_score(label, prediction_score.detach().cpu().numpy())
     print(f"generation:{gen} , accuracy:{config.last_model_test_accuracy}")
     # generation_roc = test_in_generation(gen, config.last_model, config.pred)
     # config.last_model_test_accuracy = generation_roc

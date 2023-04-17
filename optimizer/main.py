@@ -59,7 +59,7 @@ def main():
     res = minimize(problem,
                    algorithm,
                    seed=1,
-                   verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"n_max_evals":config.generations*config.pop_size*5,"config":config}))
+                   verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"config":config}))
     # res = minimize(problem,
     #                algorithm,
     #                seed=1,
