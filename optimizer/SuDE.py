@@ -223,7 +223,7 @@ class MyDe(GeneticAlgorithm):
         pred_set, test_set = create_P_test_train(P, gen)
         if self.config.last_model is not None:
             S1 = update_test_f(pop, test_set, problem, gen, self.config)
-            if gen > 3 and self.config.last_model_test_accuracy > 0.8:
+            if gen > 3 and self.config.last_model_test_accuracy > 0.6:
                 S2 = update_pred_f(pop, pred_set, gen, self.config)
             else:
                 S2 = update_test_f(pop, pred_set, problem, gen, self.config)
@@ -262,6 +262,7 @@ class MyDe(GeneticAlgorithm):
         self.config.last_model = train_in_generation(gen, self.config.last_model, self.config.pred, self.config.optimizer,
                                                 self.config.archive_size)
         self.config.current_gen += 1
+        self.config.to_csv()
         return S
 
     def _advance(self, infills=None, **kwargs):

@@ -43,7 +43,7 @@ class Config():
     def surrogate_use_permission(self,generation):
         if self.last_model is None or generation < 3:
             return False
-        if self.last_model_test_accuracy > 0.70:
+        if self.last_model_test_accuracy > 0.6:
             return True
     @classmethod
     def get_test_split(cls,generation):
@@ -99,6 +99,14 @@ class Config():
         self.optimizer.load_state_dict(torch.load("opt.t7"))
         self.pred.load_state_dict(torch.load("pred.t7"))
 
+    def to_csv(self):
+        df = pd.DataFrame({"current":self.current_gen,"counter":self.counter})
+        df.to_csv("config.csv")
+
+    def from_csv(self):
+        df= pd.read_csv("config.csv")
+        self.current_gen = df["current"]
+        self.counter = df["counter"]
 
 
 

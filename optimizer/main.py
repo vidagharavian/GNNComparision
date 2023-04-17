@@ -59,15 +59,14 @@ def main():
     res = minimize(problem,
                    algorithm,
                    seed=1,
-                   verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"n_max_evals":config.generations*config.pop_size*2,"config":config}))
+                   verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"n_max_evals":config.generations*config.pop_size*5,"config":config}))
     # res = minimize(problem,
     #                algorithm,
     #                seed=1,
     #                verbose=False, termination=get_termination("n_gen", config.generations))
 
     F_last = problem.func.evaluate(res.X)
-    config.counter = algorithm.config.counter
-    config.current_gen = algorithm.config.current_gen
+    config.from_csv()
     print(f"last objective {F_last}")
     return F_last
 
