@@ -1,5 +1,5 @@
 
-from pymoo.core.problem import Problem, ElementwiseProblem
+from pymoo.core.problem import ElementwiseProblem
 
 from benchmarks import RosenBrock, Ackley, Griewank
 
