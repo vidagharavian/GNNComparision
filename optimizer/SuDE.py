@@ -1,6 +1,9 @@
+import random
+
 from pymoo.algorithms.base.genetic import GeneticAlgorithm
 from pymoo.algorithms.soo.nonconvex.ga import FitnessSurvival
 from pymoo.core.individual import Individual
+from pymoo.core.replacement import ImprovementReplacement
 from pymoo.operators.control import NoParameterControl
 from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.termination.default import DefaultSingleObjectiveTermination
@@ -136,8 +139,102 @@ class MyVariant(Variant):
         # advance the parameter control by attaching them to the offsprings
         control.advance(off)
 
+        off = self.my_selection(off,pop)
 
         return off
+    def my_selection(self, pair1:Population, pair2:Population):
+        pair1=pair1.get("X")
+        pair2=pair2.get("X")
+        pop = np.concatenate((pair1, pair2), axis=0)
+        indiv =[Individual(**{"X":individual})for individual in pop]
+        pop = Population(individuals=indiv)
+        x = np.arange(0, len(pair1)).reshape(len(pair1),1)
+        y = np.arange(len(pair1), 2 * len(pair1)).reshape(len(pair1),1)
+        train_pair =[]
+        for p1 in x:
+            for p2 in y:
+                train_pair.append([p1[0],p2[0]])
+        P = random.choices(train_pair, k=self.config.pop_size * 4)
+        test_pair= np.concatenate((x, y), axis=1)
+        for x,y in test_pair:
+            if [x,y] not in P:
+                P.append([x,y])
+        P = np.array(P)
+        P = P.reshape(P.shape[0],2)
+        S,S_dict =self.binary_tournament(pop, P, **{"problem": self.problem})
+        winner_set =[]
+        for x,y in test_pair:
+            if S_dict[f"{x}_{y}"] ==x:
+                winner_set.append(x)
+            if S_dict[f"{x}_{y}"] == y:
+                winner_set.append(y)
+
+        S = np.array([pop[s].X for s in winner_set])
+        F= [self.problem.func.evaluate(x) for x in S]
+        F= np.array(F).reshape(len(F),1)
+        m = Population.new(X=S, F=F)
+        m.set("n_gen", self.config.current_gen)
+        return m
+
+    def creat_key_set(self,S ,test_set):
+        return_dict={}
+        for i,s in enumerate(S):
+            return_dict[f"{test_set[i][0]}_{test_set[i][1]}"]=s
+        return return_dict
+
+
+
+    def binary_tournament(self, pop, P=(100 * 100, 2), **kwargs):
+        gen = self.config.current_gen
+        problem = kwargs['problem']
+        pred_set, test_set = create_P_test_train(P, gen)
+        if self.config.last_model is not None:
+            S1 = update_test_f(pop, test_set, problem, gen, self.config)
+            S1_dict = self.creat_key_set(S1,test_set)
+            if gen > 3 and self.config.last_model_test_accuracy > 0.7:
+                S2 = update_pred_f(pop, pred_set, gen, self.config)
+            else:
+                S2 = update_test_f(pop, pred_set, problem, gen, self.config)
+            S1.extend(S2)
+            S1_dict.update(self.creat_key_set(S2,pred_set))
+            S = np.array(S1)
+            S_dict = S1_dict
+        else:
+            source = []
+            target = []
+            label = []
+            n_tournaments, n_competitors = P.shape
+            if n_competitors != 2:
+                raise Exception("Only pressure=2 allowed for binary tournament!")
+            # the result this function returns
+            S = np.full(n_tournaments, -1, dtype=int)
+            # now do all the tournaments
+            for i in range(n_tournaments):
+                a, b = P[i]
+                source.append(pop[a].X)
+                target.append(pop[b].X)
+                pop[a] = update_F(pop[a], problem)
+                pop[b] = update_F(pop[b], problem)
+                # if the first individual is better, choose it
+                if pop[a].F < pop[b].F:
+                    label.append(1)
+                    S[i] = a
+
+                # otherwise take the other individual
+                else:
+                    label.append(0)
+                    S[i] = b
+            S_dict = self.creat_key_set(S,P)
+            df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
+            feature = self.config.create_feature_vector(df, False)
+            feature.to_csv("../ranker/features.csv", index=False)
+            df = self.config.create_edge_vector_generation(df)
+            df.to_csv(f"../ranker/generations/{gen}.csv", index=False)
+        self.config.last_model = train_in_generation(gen, self.config.last_model, self.config.pred, self.config.optimizer,
+                                                self.config.archive_size)
+        self.config.current_gen += 1
+        self.config.to_csv()
+        return S,S_dict
 
 
 
@@ -189,96 +286,7 @@ class MyDe(GeneticAlgorithm):
 
         return infills
 
-    def my_selection(self, pair1:Population, pair2:Population):
-        pair1=pair1.get("X")
-        pair2=pair2.get("X")
-        pop = np.concatenate((pair1, pair2), axis=0)
-        indiv =[Individual(**{"X":individual})for individual in pop]
-        pop = Population(individuals=indiv)
-        x = np.arange(0, len(pair1)).reshape(len(pair1),1)
-        y = np.arange(len(pair1), 2 * len(pair1)).reshape(len(pair1),1)
-        train_pair =[]
-        for p1 in x:
-            for p2 in y:
-                train_pair.append([p1,p2])
 
-        test_pair= np.concatenate((x, y), axis=1)
-        P = np.array(train_pair)
-        P = P.reshape(P.shape[0],2)
-        S,S_dict =self.binary_tournament(pop, P, **{"problem": self.problem})
-        winner_set =[]
-        for x,y in test_pair:
-            if S_dict[f"{x}_{y}"] ==x:
-                winner_set.append(x)
-            if S_dict[f"{x}_{y}"] == y:
-                winner_set.append(y)
-
-        S = np.array([pop[s].X for s in winner_set])
-        F= [self.problem.func.evaluate(x) for x in S]
-        F= np.array(F).reshape(len(F),1)
-        m = Population.new(X=S, F=F)
-        m.set("n_gen", self.config.current_gen)
-        return m
-
-    def creat_key_set(self,S ,test_set):
-        return_dict={}
-        for i,s in enumerate(S):
-            return_dict[f"{test_set[i][0]}_{test_set[i][1]}"]=s
-        return return_dict
-
-
-
-    def binary_tournament(self, pop, P=(100 * 100, 2), **kwargs):
-        gen = self.config.current_gen
-        problem = kwargs['problem']
-        pred_set, test_set = create_P_test_train(P, gen)
-        if self.config.last_model is not None:
-            S1 = update_test_f(pop, test_set, problem, gen, self.config)
-            S1_dict = self.creat_key_set(S1,test_set)
-            if gen > 3 and self.config.last_model_test_accuracy > 0.6:
-                S2 = update_pred_f(pop, pred_set, gen, self.config)
-            else:
-                S2 = update_test_f(pop, pred_set, problem, gen, self.config)
-            S1.extend(S2)
-            S1_dict.update(self.creat_key_set(S2,pred_set))
-            S = np.array(S1)
-            S_dict = S1_dict
-        else:
-            source = []
-            target = []
-            label = []
-            n_tournaments, n_competitors = P.shape
-            if n_competitors != 2:
-                raise Exception("Only pressure=2 allowed for binary tournament!")
-            # the result this function returns
-            S = np.full(n_tournaments, -1, dtype=int)
-            # now do all the tournaments
-            for i in range(n_tournaments):
-                a, b = P[i]
-                source.append(pop[a].X)
-                target.append(pop[b].X)
-                pop[a] = update_F(pop[a], problem)
-                pop[b] = update_F(pop[b], problem)
-                # if the first individual is better, choose it
-                if pop[a].F < pop[b].F:
-                    label.append(1)
-                    S[i] = a
-
-                # otherwise take the other individual
-                else:
-                    label.append(0)
-                    S[i] = b
-            S_dict = self.creat_key_set(S,P)
-            df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
-            feature = self.config.create_feature_vector(df, False)
-            feature.to_csv("../ranker/features.csv", index=False)
-            df = self.config.create_edge_vector_generation(df)
-            df.to_csv(f"../ranker/generations/{gen}.csv", index=False)
-        self.config.last_model = train_in_generation(gen, self.config.last_model, self.config.pred, self.config.optimizer,
-                                                self.config.archive_size)
-        self.config.current_gen += 1
-        self.config.to_csv()
-        return S,S_dict
 
     def _advance(self, infills=None, **kwargs):
         assert infills is not None, "This algorithms uses the AskAndTell interface thus infills must to be provided."
@@ -287,7 +295,7 @@ class MyDe(GeneticAlgorithm):
         I = infills.get("index")
 
         # replace the individuals with the corresponding parents from the mating
-        self.pop[I] = self.my_selection(self.pop[I],infills)
+        self.pop[I] = ImprovementReplacement().do(self.problem, self.pop[I], infills)
 
         # update the information regarding the current population
         FitnessSurvival().do(self.problem, self.pop, return_indices=True)

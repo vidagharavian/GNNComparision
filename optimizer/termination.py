@@ -14,6 +14,7 @@ class ObjectiveTermination(DefaultSingleObjectiveTermination):
         # algorithm.evaluator.n_eval = int((self.config.counter*0.3 + (algorithm.n_gen-self.config.counter))*self.config.pop_size)
         F= [self.problem.func.evaluate(i.x) for i in algorithm.off]
         min_f = min(F)
+        print(min_f)
         if min_f <= self.best_solution:
             self.force_termination=True
         return super().update(algorithm)

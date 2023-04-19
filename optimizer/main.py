@@ -25,7 +25,7 @@ def main():
     elif config.algorithm =="DE":
         algorithm = MyDe(
             pop_size=config.pop_size,
-            variant="DE/best/0/bin",
+            variant="DE/rand/1/bin",
             CR=0.9,
             dither="vector",
             jitter=False,
@@ -33,6 +33,12 @@ def main():
             problem=problem,
             config=config
         )
+        # algorithm = DE(100,sampling=LHS(),
+        #     variant="DE/rand/1/bin",
+        #     CR=0.9,
+        #     dither="vector",
+        #     jitter=False,
+        #     n_diff = 2)
         try:
             best_solution = pd.read_csv(f"output/best_{config.algorithm}_{config.benchmark}_{config.dimension}.csv")
             best_solution=best_solution["last_objective"][0]
