@@ -24,13 +24,12 @@ def main():
         )
     elif config.algorithm =="DE":
         algorithm = MyDe(
-            pop_size=100,
-            sampling=LHS(),
-            variant="DE/rand/0/bin",
+            pop_size=config.pop_size,
+            variant="DE/best/0/bin",
             CR=0.9,
             dither="vector",
             jitter=False,
-            n_diff = 2,
+            n_diff = 1,
             problem=problem,
             config=config
         )
@@ -40,13 +39,13 @@ def main():
         except:
             res = minimize(problem,
                            DE(100,sampling=LHS(),
-            variant="DE/rand/0/bin",
+            variant="DE/rand/1/bin",
             CR=0.9,
             dither="vector",
             jitter=False,
             n_diff = 2),
                            seed=1,
-                           verbose=False,termination=get_termination("n_gen", 500))
+                           verbose=False,termination=get_termination("n_gen", 300))
             df = pd.DataFrame(
                 {"run": [0], "last_objective": res.F, "usage_number": [0], "generation": [300]})
             df.to_csv(f"output/best_{config.algorithm}_{config.benchmark}_{Config.dimension}.csv")
@@ -59,7 +58,8 @@ def main():
     res = minimize(problem,
                    algorithm,
                    seed=1,
-                   verbose=False, termination=ObjectiveTermination(best_solution=best_solution,**{"config":config}))
+                   verbose=False,termination=ObjectiveTermination(best_solution=best_solution,**{"config":config,"problem":problem,"n_max_gen":config.generations*2
+                                                                                                  }))
     # res = minimize(problem,
     #                algorithm,
     #                seed=1,

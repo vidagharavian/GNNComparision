@@ -7,7 +7,7 @@ from ranker.MyData import GraphSAGE, MLPPredictor
 
 
 class Config():
-    benchmark = 'RosenBrock'
+    benchmark = 'Ackley'
     dimension = 10
     pop_size = 100
     generations = 300
@@ -100,13 +100,13 @@ class Config():
         self.pred.load_state_dict(torch.load("pred.t7"))
 
     def to_csv(self):
-        df = pd.DataFrame({"current":self.current_gen,"counter":self.counter})
+        df = pd.DataFrame.from_dict({"current": [self.current_gen], "counter": [self.counter]})
         df.to_csv("config.csv")
 
     def from_csv(self):
-        df= pd.read_csv("config.csv")
-        self.current_gen = df["current"]
-        self.counter = df["counter"]
+        df = pd.read_csv("config.csv")
+        self.current_gen = df["current"][0]
+        self.counter = df["counter"][0]
 
 
 

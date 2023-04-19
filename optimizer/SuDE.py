@@ -205,17 +205,28 @@ class MyDe(GeneticAlgorithm):
         test_pair= np.concatenate((x, y), axis=1)
         P = np.array(train_pair)
         P = P.reshape(P.shape[0],2)
-        S =self.binary_tournament(pop, P, **{"problem": self.problem})
+        S,S_dict =self.binary_tournament(pop, P, **{"problem": self.problem})
         winner_set =[]
         for x,y in test_pair:
-            if x in S:
+            if S_dict[f"{x}_{y}"] ==x:
                 winner_set.append(x)
-            else:
+            if S_dict[f"{x}_{y}"] == y:
                 winner_set.append(y)
+
         S = np.array([pop[s].X for s in winner_set])
-        m = Population.new(X=S, F=np.full((len(S), 1), 1000))
+        F= [self.problem.func.evaluate(x) for x in S]
+        F= np.array(F).reshape(len(F),1)
+        m = Population.new(X=S, F=F)
         m.set("n_gen", self.config.current_gen)
         return m
+
+    def creat_key_set(self,S ,test_set):
+        return_dict={}
+        for i,s in enumerate(S):
+            return_dict[f"{test_set[i][0]}_{test_set[i][1]}"]=s
+        return return_dict
+
+
 
     def binary_tournament(self, pop, P=(100 * 100, 2), **kwargs):
         gen = self.config.current_gen
@@ -223,12 +234,15 @@ class MyDe(GeneticAlgorithm):
         pred_set, test_set = create_P_test_train(P, gen)
         if self.config.last_model is not None:
             S1 = update_test_f(pop, test_set, problem, gen, self.config)
+            S1_dict = self.creat_key_set(S1,test_set)
             if gen > 3 and self.config.last_model_test_accuracy > 0.6:
                 S2 = update_pred_f(pop, pred_set, gen, self.config)
             else:
                 S2 = update_test_f(pop, pred_set, problem, gen, self.config)
             S1.extend(S2)
+            S1_dict.update(self.creat_key_set(S2,pred_set))
             S = np.array(S1)
+            S_dict = S1_dict
         else:
             source = []
             target = []
@@ -254,6 +268,7 @@ class MyDe(GeneticAlgorithm):
                 else:
                     label.append(0)
                     S[i] = b
+            S_dict = self.creat_key_set(S,P)
             df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
             feature = self.config.create_feature_vector(df, False)
             feature.to_csv("../ranker/features.csv", index=False)
@@ -263,7 +278,7 @@ class MyDe(GeneticAlgorithm):
                                                 self.config.archive_size)
         self.config.current_gen += 1
         self.config.to_csv()
-        return S
+        return S,S_dict
 
     def _advance(self, infills=None, **kwargs):
         assert infills is not None, "This algorithms uses the AskAndTell interface thus infills must to be provided."
