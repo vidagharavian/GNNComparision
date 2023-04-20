@@ -25,13 +25,15 @@ def main():
     elif config.algorithm =="DE":
         algorithm = MyDe(
             pop_size=config.pop_size,
-            variant="DE/rand/1/bin",
+            variant="DE/rand/1/exp",
             CR=0.9,
             dither="vector",
             jitter=False,
-            n_diff = 1,
+            n_diff = 3,
             problem=problem,
-            config=config
+            config=config,
+            prob_mut=1,
+            F=1.5
         )
         # algorithm = DE(100,sampling=LHS(),
         #     variant="DE/rand/1/bin",

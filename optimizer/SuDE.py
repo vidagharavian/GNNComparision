@@ -129,27 +129,28 @@ class MyVariant(Variant):
         # create the population
         off = Population.new(X=trial)
 
+        off = self.my_selection(off, pop)
         # do the mutation which helps to add some more diversity
         off = self.mutation(problem, off)
 
         # repair the individuals if necessary - disabled if repair is NoRepair
         off = self.repair(problem, off, **kwargs)
-
-
         # advance the parameter control by attaching them to the offsprings
+
+
         control.advance(off)
 
-        off = self.my_selection(off,pop)
-
         return off
+
+
     def my_selection(self, pair1:Population, pair2:Population):
         pair1=pair1.get("X")
         pair2=pair2.get("X")
         pop = np.concatenate((pair1, pair2), axis=0)
         indiv =[Individual(**{"X":individual})for individual in pop]
         pop = Population(individuals=indiv)
-        x = np.arange(0, len(pair1)).reshape(len(pair1),1)
-        y = np.arange(len(pair1), 2 * len(pair1)).reshape(len(pair1),1)
+        x = np.arange(0,len(pair1)).reshape(len(pair1),1)
+        y = np.arange(len(pair1), (2 * len(pair1))).reshape(len(pair1),1)
         train_pair =[]
         for p1 in x:
             for p2 in y:
@@ -295,7 +296,7 @@ class MyDe(GeneticAlgorithm):
         I = infills.get("index")
 
         # replace the individuals with the corresponding parents from the mating
-        self.pop[I] = ImprovementReplacement().do(self.problem, self.pop[I], infills)
+        self.pop[I] = ImprovementReplacement().do(self.problem,self.pop[I],infills)
 
         # update the information regarding the current population
         FitnessSurvival().do(self.problem, self.pop, return_indices=True)

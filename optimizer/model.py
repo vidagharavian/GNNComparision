@@ -94,10 +94,11 @@ def update_pred_f(pop, pred_set, gen, config):
         target.append(pop[b].X)
         label.append(0)
     df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
+    last_df = create_archive(gen, archive_size=config.archive_size)
     feature = config.create_feature_vector(df, False)
     feature.to_csv("../ranker/features.csv", index=False)
     m = config.create_edge_vector_generation(df)
-    generation_pred = get_prediction_score(m,gen,config)
+    generation_pred = get_prediction_score(m,gen,config,last_df)
     s = []
     for p, c in zip(pred_set, generation_pred.cpu().numpy()):
         s.append(p[0] if c > 0.5 else p[1])
