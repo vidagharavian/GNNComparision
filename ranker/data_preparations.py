@@ -69,7 +69,7 @@ def create_edge_vector_generation(generation_path):
         data.to_csv(f"generations/{path}/{i}.csv")
 
 function_name ='Griewank'
-dimension = 20
+dimension = 30
 path = f"{function_name}/d{dimension}"
 create_feature_vector(path)
 create_edge_vector_generation(path)

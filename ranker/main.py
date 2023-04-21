@@ -10,7 +10,7 @@ from ranker.Node2Vec import load_edges, apply_edges, train_model, load_edges_tes
 import warnings
 warnings.filterwarnings("ignore")
 
-dimension = 10
+dimension = 30
 benchmark ='Griewank'
 pop_size = 100
 
@@ -19,7 +19,7 @@ model = GraphSAGE(dimension, 64,32,0.2)
 # You can replace DotPredictor with MLPPredictor.
 pred = MLPPredictor(32)
 
-optimizer = torch.optim.Adam(itertools.chain(model.parameters(), pred.parameters()), lr=0.01)
+optimizer = torch.optim.Adam(itertools.chain(model.parameters(), pred.parameters()), lr=0.001)
 
 def train_in_generation(generation,model):
     val_neg_u, val_neg_v, train_neg_u, train_neg_v, val_pos_u, val_pos_v, train_pos_u, train_pos_v, g, train_g = load_edges(
