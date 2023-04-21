@@ -2,6 +2,7 @@ import pandas as pd
 from pymoo.algorithms.soo.nonconvex.de import DE
 from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.factory import get_termination
+from pymoo.operators.mutation.pm import PolynomialMutation
 from pymoo.operators.sampling.lhs import LHS
 from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.optimize import minimize
@@ -32,9 +33,10 @@ def main():
             n_diff = 3,
             problem=problem,
             config=config,
-            prob_mut=1,
+            prob_mut=0.1,
             F=1.5
         )
+        PolynomialMutation()
         # algorithm = DE(100,sampling=LHS(),
         #     variant="DE/rand/1/bin",
         #     CR=0.9,

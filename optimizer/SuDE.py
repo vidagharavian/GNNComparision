@@ -129,23 +129,23 @@ class MyVariant(Variant):
         # create the population
         off = Population.new(X=trial)
 
-        off = self.my_selection(off, pop)
+
         # do the mutation which helps to add some more diversity
         off = self.mutation(problem, off)
+
 
         # repair the individuals if necessary - disabled if repair is NoRepair
         off = self.repair(problem, off, **kwargs)
         # advance the parameter control by attaching them to the offsprings
-
-
-        control.advance(off)
+        off = self.my_selection(off, pop)
+        # control.advance(off)
 
         return off
 
 
-    def my_selection(self, pair1:Population, pair2:Population):
-        pair1=pair1.get("X")
-        pair2=pair2.get("X")
+    def my_selection(self, pop1:Population, pop2:Population):
+        pair1=pop1.get("X")
+        pair2=pop2.get("X")
         pop = np.concatenate((pair1, pair2), axis=0)
         indiv =[Individual(**{"X":individual})for individual in pop]
         pop = Population(individuals=indiv)
@@ -166,16 +166,11 @@ class MyVariant(Variant):
         winner_set =[]
         for x,y in test_pair:
             if S_dict[f"{x}_{y}"] ==x:
-                winner_set.append(x)
+                winner_set.append(False)
             if S_dict[f"{x}_{y}"] == y:
-                winner_set.append(y)
-
-        S = np.array([pop[s].X for s in winner_set])
-        F= [self.problem.func.evaluate(x) for x in S]
-        F= np.array(F).reshape(len(F),1)
-        m = Population.new(X=S, F=F)
-        m.set("n_gen", self.config.current_gen)
-        return m
+                winner_set.append(True)
+        pop1[winner_set]=pop2[winner_set]
+        return pop1
 
     def creat_key_set(self,S ,test_set):
         return_dict={}
@@ -274,7 +269,6 @@ class MyDe(GeneticAlgorithm):
 
     def _infill(self):
         infills = self.mating.do(self.problem, self.pop, self.n_offsprings, algorithm=self)
-
         # tag each individual with an index - if a steady state version is executed
         index = np.arange(len(infills))
 
@@ -295,8 +289,11 @@ class MyDe(GeneticAlgorithm):
         # get the indices where each offspring is originating from
         I = infills.get("index")
 
+        F = [self.config.generations - self.config.current_gen for x in range(len(infills))]
+        F = np.array(F).reshape(len(F), 1)
+        infills.set(**{"F":F})
         # replace the individuals with the corresponding parents from the mating
-        self.pop[I] = ImprovementReplacement().do(self.problem,self.pop[I],infills)
+        self.pop[I] = infills
 
         # update the information regarding the current population
         FitnessSurvival().do(self.problem, self.pop, return_indices=True)
