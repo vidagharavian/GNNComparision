@@ -11,13 +11,14 @@ import torch.nn.functional as F
 
 
 class MyDataDataset(DGLDataset):
-    def __init__(self, edges_data, node_list):
+    def __init__(self, edges_data, node_list,path=None):
         self.edges_data = edges_data
         self.node_list = node_list
+        self.path = path
         super().__init__(name='generation_data')
 
     def process(self):
-        nodes_data = pd.read_csv('./features.csv')
+        nodes_data = pd.read_csv(f'./{self.path}features.csv')
         nodes_data = nodes_data[nodes_data.index.isin(self.node_list)]
         nodes_data.reset_index(inplace=True)
         self.edges_data['Src'] = [nodes_data[nodes_data['index'] == x].index.values[0] for x in self.edges_data['Src']]

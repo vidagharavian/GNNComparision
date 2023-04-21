@@ -16,12 +16,13 @@ def load_edges(generation, archive=None,path=None):
         edge = pd.read_csv(f"generations/{generation}.csv" if path is None else f"generations/{path}/{generation}.csv")
     else:
         edge = archive
+
     positive = edge[edge['Weight'] == 1]
     negative = edge[edge['Weight'] == 0]
     src = edge['Src']
     dst = edge['Dst']
     edge_list = np.unique(pd.concat([src, dst]))
-    g = MyDataDataset(positive, edge_list)[0]
+    g = MyDataDataset(positive, edge_list,f"generations/{path}/")[0]
     u, v = g.edges()
     eids = np.arange(g.number_of_edges())
     eids = np.random.permutation(eids)
@@ -37,7 +38,7 @@ def load_edges(generation, archive=None,path=None):
         adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
         neg_u, neg_v = np.where(adj_neg != 0)
     except:
-        neg_g = MyDataDataset(negative, edge_list)[0]
+        neg_g = MyDataDataset(negative, edge_list,f"generations/{path}/")[0]
         neg_u, neg_v = neg_g.edges()
 
     neg_eids = np.random.choice(len(neg_u), g.number_of_edges())
@@ -96,13 +97,14 @@ def test(pred,test_pos_g,test_neg_g,test_g,model,h=None):
 
 
 def load_edges_test(generation):
+    benchmark, dimention, gen = generation.split("/")
     edge = pd.read_csv(f"generations/{generation}.csv")
     positive = edge[edge['Weight'] == 1]
     negative =edge[edge['Weight'] == 0]
     src = edge['Src']
     dst = edge['Dst']
     edge_list = np.unique(pd.concat([src, dst]))
-    g = MyDataDataset(positive, edge_list)[0]
+    g = MyDataDataset(positive, edge_list,f"generations/{benchmark}/{dimention}/")[0]
     u, v = g.edges()
     test_pos_u, test_pos_v = u, v
     try:
@@ -110,7 +112,7 @@ def load_edges_test(generation):
         adj_neg = 1 - adj.todense() - np.eye(g.number_of_nodes())
         neg_u, neg_v = np.where(adj_neg != 0)
     except:
-        neg_g = MyDataDataset(negative, edge_list)[0]
+        neg_g = MyDataDataset(negative, edge_list,f"generations/{benchmark}/{dimention}/")[0]
         neg_u, neg_v = neg_g.edges()
 
     test_neg_u, test_neg_v = neg_u, neg_v
