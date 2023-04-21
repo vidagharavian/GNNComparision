@@ -24,7 +24,7 @@ def create_feature_vector(input_dir="generations",gen_num=200):
                 hash_dict[hashed_i] = len(data_set)
                 data_set.append(j)
     data=pd.DataFrame.from_records(data_set)
-    data.to_csv("features.csv",index=False)
+    data.to_csv(f"generations/{path}/features.csv",index=False)
 
 
 def create_edge_vector(input_dir="generations",gen_num=200):
@@ -66,10 +66,10 @@ def create_edge_vector_generation(generation_path):
             hashed_target = hashFloatArray(array_target)
             data_set.append({"Src":hash_dict[hashed_source], "Dst":hash_dict[hashed_target], "Weight":j})
         data = pd.DataFrame.from_records(data_set)
-        data.to_csv(f"generations/{i}.csv")
+        data.to_csv(f"generations/{path}/{i}.csv")
 
-function_name ='Ackley'
-dimension = 20
+function_name ='Griewank'
+dimension = 30
 path = f"{function_name}/d{dimension}"
 create_feature_vector(path)
 create_edge_vector_generation(path)

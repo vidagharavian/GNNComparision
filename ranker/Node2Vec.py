@@ -11,9 +11,9 @@ from sklearn.metrics import roc_auc_score
 from ranker.MyData import MyDataDataset
 
 
-def load_edges(generation, archive=None):
+def load_edges(generation, archive=None,path=None):
     if archive is None:
-        edge = pd.read_csv(f"generations/{generation}.csv")
+        edge = pd.read_csv(f"generations/{generation}.csv" if path is None else f"generations/{path}/{generation}.csv")
     else:
         edge = archive
     positive = edge[edge['Weight'] == 1]

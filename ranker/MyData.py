@@ -43,7 +43,7 @@ class MyDataDataset(DGLDataset):
 # ----------- 2. create model -------------- #
 # build a two-layer GraphSAGE model
 class GraphSAGE(nn.Module):
-    def __init__(self, in_feats, h_feats, r_feats, drop_out):
+    def   __init__(self, in_feats, h_feats, r_feats, drop_out):
         super(GraphSAGE, self).__init__()
         self.conv1 = SAGEConv(in_feats, h_feats, 'mean')
         self.conv2 = SAGEConv(h_feats, r_feats, 'mean')

@@ -42,11 +42,11 @@ def covert_feature(feature,df):
     return ratings_feature_id
 
 
-def create_archive(generation,archive_size=500):
+def create_archive(generation,archive_size=500,path=None):
     edges =[]
     data_set =pd.DataFrame()
     for i in range(generation,0,-1):
-        edge =pd.read_csv(f"generations/{i}.csv")
+        edge =pd.read_csv(f"generations/{i}.csv" if path is None else f"generations/{path}/{i}.csv")
         edges.append(edge)
         data_set = pd.concat(edges)
         if len(data_set)> archive_size:
