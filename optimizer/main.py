@@ -2,26 +2,32 @@ import pandas as pd
 from pymoo.algorithms.soo.nonconvex.de import DE
 from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.factory import get_termination
-from pymoo.operators.mutation.pm import PolynomialMutation
+from pymoo.operators.crossover.sbx import SBX
+from pymoo.operators.mutation.pm import PolynomialMutation, PM
 from pymoo.operators.sampling.lhs import LHS
 from pymoo.operators.sampling.rnd import FloatRandomSampling
+from pymoo.operators.selection.tournament import TournamentSelection
 from pymoo.optimize import minimize
 
 from SuDE import MyDe
 from config import Config
 from model import delete_files, MySelection, binary_tournament
 from optimizer import Optimizer
+from utils import MyRounder
 from termination import ObjectiveTermination
 
 
-def main():
+def main(run):
     global config
     problem = Optimizer(n_var=config.dimension, function_name=config.benchmark)
     if config.algorithm =="GA":
         algorithm = GA(
             pop_size=config.pop_size,
             sampling=FloatRandomSampling(),
-            selection=MySelection(pressure=2, func_comp=binary_tournament, problem=problem,config=config)
+            crossover=SBX(prob=0.1, eta=20.0, vtype=float, repair=MyRounder()),
+            mutation=PM(prob=0.1, eta=20.0, vtype=float, repair=MyRounder()),
+            eliminate_duplicates=True,
+            # selection=MySelection(pressure=2, func_comp=binary_tournament, problem=problem,config=config)
         )
     elif config.algorithm =="DE":
         algorithm = MyDe(
@@ -67,12 +73,12 @@ def main():
 
     res = minimize(problem,
                    algorithm,
-                   seed=1,
+                   seed=run,
                    verbose=False,termination=ObjectiveTermination(best_solution=best_solution,**{"config":config,"problem":problem,"n_max_gen":config.generations*2
                                                                                                   }))
     # res = minimize(problem,
     #                algorithm,
-    #                seed=1,
+    #                seed=run,
     #                verbose=False, termination=get_termination("n_gen", config.generations))
 
     F_last = problem.func.evaluate(res.X)
@@ -88,7 +94,7 @@ generations =[]
 for i in range(10):
     delete_files()
     config = Config()
-    last_objective = main()
+    last_objective = main(i)
     run.append(i)
     F_last.append(last_objective)
     counters.append(config.counter)

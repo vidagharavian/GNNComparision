@@ -32,7 +32,7 @@ class Optimizer(ElementwiseProblem):
 
     def _evaluate(self, x, out, *args, **kwargs):
 
-        out["F"] =600
+        out["F"] =10000
 
 
 

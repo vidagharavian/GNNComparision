@@ -1,9 +1,8 @@
-import random
+
 
 from pymoo.algorithms.base.genetic import GeneticAlgorithm
 from pymoo.algorithms.soo.nonconvex.ga import FitnessSurvival
 from pymoo.core.individual import Individual
-from pymoo.core.replacement import ImprovementReplacement
 from pymoo.operators.control import NoParameterControl
 from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.termination.default import DefaultSingleObjectiveTermination
@@ -155,22 +154,11 @@ class MyVariant(Variant):
         for p1 in x:
             for p2 in y:
                 train_pair.append([p1[0],p2[0]])
-        P = random.choices(train_pair, k=self.config.pop_size * 4)
-        test_pair= np.concatenate((x, y), axis=1)
-        for x,y in test_pair:
-            if [x,y] not in P:
-                P.append([x,y])
-        P = np.array(P)
-        P = P.reshape(P.shape[0],2)
-        S,S_dict =self.binary_tournament(pop, P, **{"problem": self.problem})
-        winner_set =[]
-        for x,y in test_pair:
-            if S_dict[f"{x}_{y}"] ==x:
-                winner_set.append(False)
-            if S_dict[f"{x}_{y}"] == y:
-                winner_set.append(True)
-        pop1[winner_set]=pop2[winner_set]
-        return pop1
+        train_pair = np.array(train_pair)
+        train_pair = train_pair.reshape(train_pair.shape[0],2)
+        S = self.binary_tournament(pop, train_pair, **{"problem": self.problem})
+        pop = pop[S]
+        return pop
 
     def creat_key_set(self,S ,test_set):
         return_dict={}
@@ -186,15 +174,13 @@ class MyVariant(Variant):
         pred_set, test_set = create_P_test_train(P, gen)
         if self.config.last_model is not None:
             S1 = update_test_f(pop, test_set, problem, gen, self.config)
-            S1_dict = self.creat_key_set(S1,test_set)
             if gen > 3 and self.config.last_model_test_accuracy > 0.7:
                 S2 = update_pred_f(pop, pred_set, gen, self.config)
             else:
-                S2 = update_test_f(pop, pred_set, problem, gen, self.config)
+                S2 = update_test_f(pop, pred_set, problem, gen, self.config,False)
             S1.extend(S2)
-            S1_dict.update(self.creat_key_set(S2,pred_set))
             S = np.array(S1)
-            S_dict = S1_dict
+            S = self.ranker(len(pop),S)
         else:
             source = []
             target = []
@@ -220,17 +206,22 @@ class MyVariant(Variant):
                 else:
                     label.append(0)
                     S[i] = b
-            S_dict = self.creat_key_set(S,P)
             df = pd.DataFrame.from_dict({"source": source, "target": target, "label": label})
             feature = self.config.create_feature_vector(df, False)
             feature.to_csv("../ranker/features.csv", index=False)
             df = self.config.create_edge_vector_generation(df)
             df.to_csv(f"../ranker/generations/{gen}.csv", index=False)
-        self.config.last_model = train_in_generation(gen, self.config.last_model, self.config.pred, self.config.optimizer,
-                                                self.config.archive_size)
+        self.config.last_model = train_in_generation(gen, self.config.last_model, self.config.pred, self.config.optimizer)
         self.config.current_gen += 1
         self.config.to_csv()
-        return S,S_dict
+        return S
+
+    def ranker(self,pop_size,s):
+        u, count = np.unique(s, return_counts=True)
+        count_sort_ind = np.argsort(-count)
+
+        return u[count_sort_ind][:int(pop_size/2)]
+
 
 
 

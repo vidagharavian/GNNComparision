@@ -20,9 +20,9 @@ pop_size = 100
 
 
 
-def train_in_generation(generation,model,pred,optimizer,archive_size):
+def train_in_generation(generation,model,pred,optimizer):
     val_neg_u, val_neg_v, train_neg_u, train_neg_v, val_pos_u, val_pos_v, train_pos_u, train_pos_v, g, train_g = load_edges(
-        generation, create_archive(generation, archive_size))
+        generation)
     train_neg_g, train_pos_g = apply_edges(train_pos_u, train_pos_v, train_neg_u, train_neg_v, g)
     val_neg_g, val_pos_g = apply_edges(val_pos_u, val_pos_v, val_neg_u, val_neg_v, g)
     return train_model(model, train_g, train_pos_g, pred, train_neg_g, optimizer, val_pos_g, val_neg_g)

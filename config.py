@@ -11,7 +11,7 @@ class Config():
     dimension = 10
     pop_size = 100
     generations = 300
-    archive_size = 800
+    archive_size = 15000
     current_gen = 1
     counter = 0
     last_model_test_accuracy = 0

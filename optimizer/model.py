@@ -36,14 +36,19 @@ def create_P_test_train(P, gen):
     return np.array(test_set), np.array(train_set)
 
 
-def update_test_f(pop, test_set, problem, gen, config):
+def update_test_f(pop, test_set, problem, gen, config,test=True):
     source = []
     target = []
     label = []
     S = []
+    checked =[]
     for a, b in test_set:
-        pop[a] = update_F(pop[a], problem)
-        pop[b] = update_F(pop[b], problem)
+        if a not in checked:
+            pop[a] = update_F(pop[a], problem)
+            checked.append(a)
+        if b not in checked:
+            pop[b] = update_F(pop[b], problem)
+            checked.append(b)
         source.append(pop[a].X)
         target.append(pop[b].X)
         label.append(1 if pop[a].F < pop[b].F else 0)
@@ -58,13 +63,14 @@ def update_test_f(pop, test_set, problem, gen, config):
     except:
         pass
     m.to_csv(f"../ranker/generations/{gen}.csv", index=False)
-    label = m['Weight'].values.copy()
-    # label = torch.from_numpy(label).to("cuda:0")
-    last_df = create_archive(gen-1,archive_size=config.archive_size)
-    prediction_score = get_prediction_score(m,gen,config,last_df)
+    if test:
+        label = m['Weight'].values.copy()
+        # label = torch.from_numpy(label).to("cuda:0")
+        last_df = create_archive(gen-1,archive_size=config.archive_size)
+        prediction_score = get_prediction_score(m,gen,config,last_df)
 
-    config.last_model_test_accuracy =roc_auc_score(label, prediction_score.detach().cpu().numpy())
-    print(f"generation:{gen} , accuracy:{config.last_model_test_accuracy}")
+        config.last_model_test_accuracy =roc_auc_score(label, prediction_score.detach().cpu().numpy())
+        print(f"generation:{gen} , accuracy:{config.last_model_test_accuracy}")
     # generation_roc = test_in_generation(gen, config.last_model, config.pred)
     # config.last_model_test_accuracy = generation_roc
     return S
