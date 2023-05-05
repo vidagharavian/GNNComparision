@@ -3,6 +3,7 @@
 from pymoo.algorithms.base.genetic import GeneticAlgorithm
 from pymoo.algorithms.soo.nonconvex.ga import FitnessSurvival
 from pymoo.core.individual import Individual
+from pymoo.core.replacement import ImprovementReplacement
 from pymoo.operators.control import NoParameterControl
 from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.termination.default import DefaultSingleObjectiveTermination
@@ -33,6 +34,7 @@ class MyVariant(Variant):
 
     def __init__(self, selection="best", n_diffs=1, F=0.5, crossover="bin", CR=0.2, jitter=False, prob_mut=0.1,
                  control=EvolutionaryParameterControl,problem=None,config=None,**kwargs):
+        self.seltype = selection
         self.problem=problem
         self.config = config
         super().__init__(selection, n_diffs, F, crossover, CR, jitter, prob_mut, control, **kwargs)
@@ -70,9 +72,11 @@ class MyVariant(Variant):
 
             itself = np.array(targets)[:, None]
 
-
-            if sel_type == "rand" or "best":
+            if sel_type == "rand" or sel_type == "best":
                 fast_fill_random(P, len(pop), columns=range(n_parents), Xp=itself)
+            elif sel_type == "best1":
+                P[:, 0] = best()
+                fast_fill_random(P, len(pop), columns=range(1, n_parents), Xp=itself)
             elif sel_type == "target-to-best":
                 best = lambda: np.random.choice(np.where(pop.get("rank") == 0)[0], replace=True, size=n_matings)
                 P[:, 0] = targets
@@ -136,8 +140,10 @@ class MyVariant(Variant):
         # repair the individuals if necessary - disabled if repair is NoRepair
         off = self.repair(problem, off, **kwargs)
         # advance the parameter control by attaching them to the offsprings
-        off = self.my_selection(off, pop)
-        # control.advance(off)
+        if self.seltype != "best1":
+            off = self.my_selection(off, pop)
+        else:
+            control.advance(off)
 
         return off
 
@@ -221,6 +227,9 @@ class MyVariant(Variant):
         count_sort_ind = np.argsort(-count)
 
         return u[count_sort_ind][:int(pop_size/2)]
+    def best_ranker(self,p1,p2):
+        pass
+
 
 
 
@@ -231,6 +240,7 @@ class MyDe(GeneticAlgorithm):
                  output=SingleObjectiveOutput(), generation=1,config=None, **kwargs):
         self.config = config
         self.problem = kwargs["problem"]
+        self.best =kwargs["best"]
         if variant is None:
             if "control" not in kwargs:
                 kwargs["control"] = NoParameterControl
@@ -250,8 +260,7 @@ class MyDe(GeneticAlgorithm):
                          mating=self.variant,
                          survival=None,
                          output=output,
-                         eliminate_duplicates=False,
-                         **kwargs)
+                         eliminate_duplicates=False)
 
         self.termination = DefaultSingleObjectiveTermination()
 
@@ -276,15 +285,20 @@ class MyDe(GeneticAlgorithm):
 
     def _advance(self, infills=None, **kwargs):
         assert infills is not None, "This algorithms uses the AskAndTell interface thus infills must to be provided."
-
+        best = self.best
         # get the indices where each offspring is originating from
         I = infills.get("index")
+        if not best:
+            F = [self.config.generations - self.config.current_gen for x in range(len(infills))]
+            F = np.array(F).reshape(len(F), 1)
+            infills.set(**{"F":F})
+            # replace the individuals with the corresponding parents from the mating
+            self.pop[I] = infills
+        else:
+            self.pop[I] = self.get_best_rank(self.pop[I],infills)
+            # self.pop[I] = ImprovementReplacement().do(self.problem, self.pop[I], infills)
 
-        F = [self.config.generations - self.config.current_gen for x in range(len(infills))]
-        F = np.array(F).reshape(len(F), 1)
-        infills.set(**{"F":F})
-        # replace the individuals with the corresponding parents from the mating
-        self.pop[I] = infills
+
 
         # update the information regarding the current population
         FitnessSurvival().do(self.problem, self.pop, return_indices=True)
@@ -292,5 +306,28 @@ class MyDe(GeneticAlgorithm):
     def _set_optimum(self, **kwargs):
         k = self.pop.get("rank") == 0
         self.opt = self.pop[k]
+
+    def get_best_rank(self,p1,p2):
+        X = p1.get("X")
+        m = p2.get("X")
+        X = np.concatenate((X ,m),axis=0)
+        F = p1.get("F")
+
+        F = np.concatenate((F , p2.get("F")),axis=0)
+        out_dict = {}
+        for a,b in zip(F,X):
+            out_dict[a[0]]= b
+        m = [f[0] for f in F]
+        m.sort()
+        sorted_data = [out_dict[ind] for ind in m]
+        p = Population.new(X=sorted_data,F=np.array(m).reshape((len(m),1)))
+        gen = p2.get("n_gen")
+        p= p[:len(p1)]
+        p.set("n_gen",gen)
+        return p[:len(p2)]
+        # for cv,m in zip(x,p):
+        #     m.CV(cv)
+
+
 
 

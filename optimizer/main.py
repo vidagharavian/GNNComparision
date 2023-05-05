@@ -17,7 +17,7 @@ from utils import MyRounder
 from termination import ObjectiveTermination
 
 
-def main(run):
+def main(run,best_solution):
     global config
     problem = Optimizer(n_var=config.dimension, function_name=config.benchmark)
     if config.algorithm =="GA":
@@ -32,7 +32,7 @@ def main(run):
     elif config.algorithm =="DE":
         algorithm = MyDe(
             pop_size=config.pop_size,
-            variant="DE/rand/1/exp",
+            variant=f"DE/"+("best1" if config.best else "best")+"/1/exp",
             CR=0.9,
             dither="vector",
             jitter=False,
@@ -40,7 +40,8 @@ def main(run):
             problem=problem,
             config=config,
             prob_mut=0.1,
-            F=1.5
+            F=1.5,
+            **{"best":config.best}
         )
         PolynomialMutation()
         # algorithm = DE(100,sampling=LHS(),
@@ -49,23 +50,7 @@ def main(run):
         #     dither="vector",
         #     jitter=False,
         #     n_diff = 2)
-        try:
-            best_solution = pd.read_csv(f"output/best_{config.algorithm}_{config.benchmark}_{config.dimension}.csv")
-            best_solution=best_solution["last_objective"][0]
-        except:
-            res = minimize(problem,
-                           DE(100,sampling=LHS(),
-            variant="DE/rand/1/bin",
-            CR=0.9,
-            dither="vector",
-            jitter=False,
-            n_diff = 2),
-                           seed=1,
-                           verbose=False,termination=get_termination("n_gen", 300))
-            df = pd.DataFrame(
-                {"run": [0], "last_objective": res.F, "usage_number": [0], "generation": [300]})
-            df.to_csv(f"output/best_{config.algorithm}_{config.benchmark}_{Config.dimension}.csv")
-            best_solution=problem.func.evaluate(res.X)
+
 
 
 
@@ -75,7 +60,7 @@ def main(run):
                    algorithm,
                    seed=run,
                    verbose=False,termination=ObjectiveTermination(best_solution=best_solution,**{"config":config,"problem":problem,"n_max_gen":config.generations*2
-                                                                                                  }))
+                                                                                                  }) if not config.best else get_termination("n_gen", 300) )
     # res = minimize(problem,
     #                algorithm,
     #                seed=run,
@@ -86,19 +71,32 @@ def main(run):
     print(f"last objective {F_last}")
     return F_last
 
+def get_best_solution(config):
+    best_solution = pd.read_csv(f"output/best_{config.benchmark}_{config.algorithm}_{config.dimension}.csv")
+    best_solution = best_solution['last_objective'].mean()
+    return best_solution
+
 
 run = []
 F_last = []
 counters = []
 generations =[]
-for i in range(10):
-    delete_files()
+
+for i in range(31):
+    try:
+     delete_files()
+    except:
+        pass
     config = Config()
-    last_objective = main(i)
+    best_solution = get_best_solution(config)
+    last_objective = main(i,best_solution)
     run.append(i)
     F_last.append(last_objective)
     counters.append(config.counter)
     generations.append(config.current_gen)
     df = pd.DataFrame({"run": run, "last_objective": F_last, "usage_number": counters,"generation":generations})
-    df.to_csv(f"{config.benchmark}_{config.algorithm}_{Config.dimension}.csv")
+    if not config.best:
+        df.to_csv(f"output/{config.benchmark}_{config.algorithm}_{Config.dimension}.csv")
+    else:
+        df.to_csv(f"output/best_{config.benchmark}_{config.algorithm}_{Config.dimension}.csv")
     config.reset_params()

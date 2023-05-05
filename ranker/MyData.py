@@ -49,7 +49,7 @@ class MyDataDataset(DGLDataset):
 class GraphSAGE(nn.Module):
     def __init__(self, in_feats, h_feats, r_feats):
         super(GraphSAGE, self).__init__()
-        self.conv1 = SAGEConv(in_feats, h_feats, 'lstm').to(device)
+        self.conv1 = SAGEConv(in_feats, h_feats, 'mean').to(device)
         self.conv2 = SAGEConv(h_feats, r_feats, 'mean').to(device)
         self.conv3 = SAGEConv(r_feats, r_feats, 'mean').to(device)
 
