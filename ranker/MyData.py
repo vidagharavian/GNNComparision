@@ -50,14 +50,10 @@ class GraphSAGE(nn.Module):
     def __init__(self, in_feats, h_feats, r_feats):
         super(GraphSAGE, self).__init__()
         self.conv1 = SAGEConv(in_feats, h_feats, 'mean').to(device)
-        self.conv2 = SAGEConv(h_feats, r_feats, 'mean').to(device)
-        self.conv3 = SAGEConv(r_feats, r_feats, 'mean').to(device)
+        self.conv3 = SAGEConv(h_feats, r_feats, 'mean').to(device)
 
-    def forward(self, g, in_feat):
-        g, in_feat=g.to(device), in_feat.to(device)
-        h = self.conv1(g, in_feat).to(device)
-        h= F.relu(h)
-        h = self.conv2(g, h).to(device)
+    def forward(self, x, g):
+        h = self.conv1(g, x).to(device)
         h = F.relu(h)
         h = self.conv3(g, h).to(device)
         return h
@@ -83,7 +79,7 @@ class MLPPredictor(nn.Module):
     def __init__(self, h_feats):
         super().__init__()
         self.W1 = nn.Linear(h_feats * 2, h_feats).to(device)
-        self.W2 = nn.Linear(h_feats,2).to(device)
+        self.W2 = nn.Linear(h_feats,1).to(device)
 
     def apply_edges(self, edges):
         """
@@ -103,8 +99,8 @@ class MLPPredictor(nn.Module):
             A dictionary of new edge features.
         """
         h = torch.cat([edges.src['h'], edges.dst['h']], 1).to(device)
-        x=F.softmax(self.W2(F.relu(self.W1(h)).to(device))).to(device).squeeze(1)
-        return {'score': x[:,1]}
+        x=F.sigmoid(self.W2(F.relu(self.W1(h)).to(device))).to(device).squeeze(1)
+        return {'score': x}
 
     def reset_params(self):
         for layer in self.children():
@@ -117,10 +113,30 @@ class MLPPredictor(nn.Module):
             g.apply_edges(self.apply_edges)
             return g.edata['score']
 
+class ScorePredictor(nn.Module):
+    def __init__(self, num_classes, in_features):
+        super().__init__()
+        self.W1 = nn.Linear(in_features, int(in_features/2)).to(device)
+        self.W2 = nn.Linear(int(in_features/2), num_classes).to(device)
+        self.activation = nn.LogSoftmax(dim=1)
+
+    def apply_edges(self, edges):
+        h_u = edges.src['h']
+        h_v = edges.dst['h']
+        score = self.W2(F.relu(self.W1(h_u-h_v).to(device))).to(device)
+        return {'score': self.activation(score)}
+
+    def forward(self, edge_subgraph, x):
+        with edge_subgraph.local_scope():
+            edge_subgraph.ndata['h'] = x
+            edge_subgraph.apply_edges(self.apply_edges)
+            return edge_subgraph.edata['score']
+
+
 class MyHadamardLinkPredictor(HadamardLinkPredictor):
 
     def apply_edges(self,edges):
-        x=super().forward(edges.src['h'], edges.dst['h']).to(device).squeeze(1)
+        x= F.sigmoid(super().forward(edges.src['h'], edges.dst['h'])).to(device).squeeze(1)
         return {'score': x}
 
     def forward(self, g, h):
@@ -132,3 +148,13 @@ class MyHadamardLinkPredictor(HadamardLinkPredictor):
 
     def reset_params(self):
         self.reset_parameters()
+
+class Model(nn.Module):
+    def __init__(self, in_features, hidden_features, out_features, num_classes):
+        super().__init__()
+        self.gcn = GraphSAGE(in_features, hidden_features,out_features)
+        self.predictor = ScorePredictor(num_classes,out_features)
+
+    def forward(self,x,edge_subgraph):
+        x = self.gcn(x,edge_subgraph)
+        return self.predictor(edge_subgraph, x)

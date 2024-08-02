@@ -22,6 +22,10 @@ class Optimizer(ElementwiseProblem):
             xl = -600
             xu = 600
             self.func = Griewank()
+        else:
+            xl =-100
+            xu = 100
+            self.func = function_name
 
         super().__init__(n_var=n_var,
                          n_obj=n_obj,
@@ -31,8 +35,11 @@ class Optimizer(ElementwiseProblem):
 
 
     def _evaluate(self, x, out, *args, **kwargs):
-
-        out["F"] = self.func.evaluate(x)
+        try:
+            out["F"] = self.func.evaluate(x)
+        except:
+            x = x.reshape(1,-1)
+            out["F"] = self.func(x)[0]
 
 
 

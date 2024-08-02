@@ -124,7 +124,7 @@ def binary_tournament(pop, P=(100 * 100, 2), **kwargs):
     if gen > 3:
         pred_set, test_set = create_P_test_train(P, gen)
         S1 = update_test_f(pop, test_set, problem, gen, config)
-        if config.last_model_test_accuracy > 0.8:
+        if config.last_model_test_accuracy > 0.6:
             S2 = update_pred_f(pop, pred_set, gen, config)
         else:
             S2 = update_test_f(pop, pred_set, problem, gen, config)

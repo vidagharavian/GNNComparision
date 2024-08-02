@@ -142,6 +142,7 @@ class MyVariant(Variant):
         # advance the parameter control by attaching them to the offsprings
         if self.seltype != "best1":
             off = self.my_selection(off, pop)
+            control.advance(off)
         else:
             control.advance(off)
 
@@ -163,14 +164,23 @@ class MyVariant(Variant):
         train_pair = np.array(train_pair)
         train_pair = train_pair.reshape(train_pair.shape[0],2)
         S = self.binary_tournament(pop, train_pair, **{"problem": self.problem})
-        pop = pop[S]
-        return pop
+        return S
 
     def creat_key_set(self,S ,test_set):
         return_dict={}
         for i,s in enumerate(S):
             return_dict[f"{test_set[i][0]}_{test_set[i][1]}"]=s
         return return_dict
+
+    def update_X_for_best(self,S,pop):
+        X=[]
+        for s in S:
+            X.append(pop[s].get("X"))
+        off = Population.new(X=X)
+        off.set("n_gen",self.config.current_gen+1)
+        return off
+
+
 
 
 
@@ -187,6 +197,7 @@ class MyVariant(Variant):
             S1.extend(S2)
             S = np.array(S1)
             S = self.ranker(len(pop),S)
+            off = self.update_X_for_best(S,pop)
         else:
             source = []
             target = []
@@ -220,7 +231,7 @@ class MyVariant(Variant):
         self.config.last_model = train_in_generation(gen, self.config.last_model, self.config.pred, self.config.optimizer)
         self.config.current_gen += 1
         self.config.to_csv()
-        return S
+        return off
 
     def ranker(self,pop_size,s):
         u, count = np.unique(s, return_counts=True)
@@ -291,7 +302,7 @@ class MyDe(GeneticAlgorithm):
         if not best:
             F = [self.config.generations - self.config.current_gen for x in range(len(infills))]
             F = np.array(F).reshape(len(F), 1)
-            infills.set(**{"F":F})
+            infills.set(**{"n_gen":F})
             # replace the individuals with the corresponding parents from the mating
             self.pop[I] = infills
         else:

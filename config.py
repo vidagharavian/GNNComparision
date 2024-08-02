@@ -9,8 +9,8 @@ from ranker.MyData import GraphSAGE, MLPPredictor
 class Config():
     benchmark = 'Ackley'
     dimension = 30
-    pop_size = 100
-    generations = 300
+    pop_size = dimension*5
+    generations = 30
     archive_size = 15000
     current_gen = 1
     counter = 0
@@ -51,7 +51,7 @@ class Config():
         if generation < 4:
             return 1
         else:
-            return 0.3
+            return 0.2
 
     def create_edge_vector_generation(self,df):
         source, label, target = df['source'], df['label'], df['target']
